@@ -24,7 +24,19 @@ REDIS_VERSION="7.2.4"
 
 ## End configuration
 
-## Start internal functions
+## Start internal utils
+
+function deleteCache()
+{
+    for FILE in *
+    do
+        if [[ $FILE == conf || $FILE == services || $FILE == *.md || $FILE == *.sh ]]
+        continue
+        fi
+        
+        rm -rf $FILE
+    done
+}
 
 function buildModule() {
     local FUNC_FOLDER=${1}
@@ -61,13 +73,17 @@ function writeLine() {
 
 function enableService() {
     local SERVICE_NAME=${1}
-    systemctl enable ${SERVICE_NAME}
     systemctl daemon-reload
+    systemctl enable --now ${SERVICE_NAME}
     systemctl restart ${SERVICE_NAME}
     writeLine "Started ${SERVICE_NAME}"
 }
 
-## End internal functions
+CONF_PATH="./conf"
+SERVICES_PATH="./services"
+
+
+## End internal utils
 
 ## Start module configuration
 
@@ -119,7 +135,7 @@ REDIS_CONFIG_PATH="/etc/redis/${REDIS_CONFIG_FILE}"
 
 ## End module configuration
 
-find . -type f,d ! -name "*.sh" | xargs -r rm -rf
+deleteCache
 
 buildModule $JEMALLOC_FOLDER $JEMALLOC_URL $JEMALLOC_BUILD_ARGS
 writeLine "Installed jemalloc"
@@ -133,7 +149,7 @@ writeLine "Installed libatomic"
 buildModule $PCRE2_FOLDER $PCRE2_URL $PCRE2_BUILD_ARGS
 writeLine "Installed pcre2"
 
-if [[ $USE_OPENSSL -eq 1 ]]; then
+if [[ $USE_OPENSSL == 1 ]]; then
     buildModule $OPENSSL_FOLDER $OPENSSL_URL
     writeLine "Extracted OpenSSL"
 else
@@ -153,18 +169,18 @@ writeLine "Extracted NGX_Brotli"
 buildModule $NGINX_FOLDER $NGINX_URL $NGINX_BUILD_ARGS
 writeLine "Built NGINX"
     
-cp "./services/${NGINX_SERVICE_FILE}" ${NGINX_SYSTEMD_SERVICE_PATH}
+cp "${SERVICES_PATH}/${NGINX_SERVICE_FILE}" ${NGINX_SYSTEMD_SERVICE_PATH}
 enableService ${NGINX_SERVICE_FILE}
 
 ## End NGINX installation
 
-if [[ $USE_REDIS -eq 1 ]]; then
+if [[ $USE_REDIS == 1 ]]; then
     buildModule $REDIS_FOLDER $REDIS_URL $REDIS_BUILD_ARGS
     writeLine "Built Redis"
     
-    cp "./conf/${REDIS_CONFIG_FILE}" ${REDIS_CONFIG_PATH}
+    cp "${CONF_PATH}/${REDIS_CONFIG_FILE}" ${REDIS_CONFIG_PATH}
     
-    cp "./services/${REDIS_SERVICE_FILE}" ${REDIS_SYSTEMD_SERVICE_PATH}
+    cp "${SERVICES_PATH}/${REDIS_SERVICE_FILE}" ${REDIS_SYSTEMD_SERVICE_PATH}
     enableService ${REDIS_SERVICE_FILE}
 fi
 
