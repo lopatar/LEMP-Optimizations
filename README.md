@@ -5,6 +5,8 @@ Versions of all software being built including NGINX itself can be changed in th
 
 This script consists of me learning more advanced shell scripting concepts. Excuse the mess :)
 
+**Did not bother handling missing dependencies, maybe later ;)**
+
 **Architecture/CPU specific optimizations are tuned for Raspberry Pi 4B**
 
 **The script is supposed to be ran using zsh**

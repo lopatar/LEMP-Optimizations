@@ -30,8 +30,8 @@ function deleteCache()
 {
     for FILE in *
     do
-        if [[ $FILE == conf || $FILE == services || $FILE == *.md || $FILE == *.sh ]]
-        continue
+        if [[ $FILE == conf || $FILE == services || $FILE == *.md || $FILE == *.sh ]]; then
+            continue
         fi
         
         rm -rf $FILE
@@ -79,9 +79,14 @@ function enableService() {
     writeLine "Started ${SERVICE_NAME}"
 }
 
+function installPackages()
+{
+    apt update && apt upgrade -y
+    apt install -y ninja-build libsystemd-dev
+}
+
 CONF_PATH="./conf"
 SERVICES_PATH="./services"
-
 
 ## End internal utils
 
@@ -127,15 +132,15 @@ NGINX_SYSTEMD_SERVICE_PATH="/usr/lib/systemd/system/${NGINX_SERVICE_FILE}"
 
 REDIS_FOLDER="redis"
 REDIS_URL="https://github.com/redis/redis/archive/${REDIS_VERSION}.tar.gz"
-REDIS_BUILD_ARGS="make USE_SYSTEMD=yes MALLLOC=jemalloc REDIS_CFLAGS=\"-I/usr/local/include -O3 -funroll-loops --param=ssp-buffer-size=4 -flto=auto -flto-compression-level=9 -mtune=${M_TUNE}\" REDIS_LDFLAGS=\"-L/usr/local/lib -l:libjemalloc.a \" -j${PARALLEL_TASKS} && make install"
+REDIS_BUILD_ARGS="make USE_SYSTEMD=yes MALLLOC=jemalloc BUILD_TLS=no REDIS_CFLAGS=\"-I/usr/local/include -O3 -funroll-loops --param=ssp-buffer-size=4 -flto=auto -flto-compression-level=9 -mtune=${M_TUNE}\" REDIS_LDFLAGS=\"-L/usr/local/lib -l:libjemalloc.a \" -j${PARALLEL_TASKS} && make install"
 REDIS_SERVICE_FILE="redis.service"
 REDIS_SYSTEMD_SERVICE_PATH="/etc/systemd/system/${REDIS_SERVICE_FILE}"
 REDIS_CONFIG_FILE="redis.conf"
 REDIS_CONFIG_PATH="/etc/redis/${REDIS_CONFIG_FILE}"
 
 ## End module configuration
-
 deleteCache
+installPackages
 
 buildModule $JEMALLOC_FOLDER $JEMALLOC_URL $JEMALLOC_BUILD_ARGS
 writeLine "Installed jemalloc"
