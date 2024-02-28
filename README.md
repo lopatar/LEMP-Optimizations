@@ -22,7 +22,7 @@ This script consists of me learning more advanced shell scripting concepts. Excu
 - Leveraging GCC optimization features
 - Enabling NGINX thread pools
 - Enabling NGNIX file actions
-- Focusing on HTTP3/QUIC
+- Focusing on HTTP3/QUIC (currently using OpenSSL's compatibility layer as there's only )
 
 # TODO:
 - BoringSSL
