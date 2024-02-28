@@ -4,11 +4,9 @@
 # BoringSSL not implemented in NGINX build
 USE_OPENSSL=1
 
-# Values for Raspberry Pi 4B
 M_TUNE="cortex-a72"
 M_ARCH="armv8-a+crc"
-
-PARALLEL_TASKS="8"
+PARALLEL_TASKS=8
 
 JEMALLOC_VERSION="5.3.0"
 ZLIB_VERSION="1.2.11"
@@ -30,7 +28,6 @@ function processModule() {
     elif [[ $FUNC_URL == *.gz ]]; then
         FUNC_ARCHIVE_NAME=${FUNC_FOLDER}.tar.gz
     else
-        # Had some issues where this would be popuulated with the previous function call value (?)
         FUNC_ARCHIVE_NAME=".git.clone"
     fi
 
@@ -104,3 +101,4 @@ fi
 processModule $NGX_BROTLI_FOLDER $NGX_BROTLI_URL
 
 processModule $NGINX_FOLDER $NGINX_URL $NGINX_BUILD_ARGS
+
