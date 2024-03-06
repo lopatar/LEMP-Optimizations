@@ -11,6 +11,9 @@ This script consists of me learning more advanced shell scripting concepts. Excu
 
 **The script is supposed to be ran using zsh**
 
+# Additional software
+- Redis
+
 # Libraries
 - OpenSSL/BoringSSL (**BoringSSL** does not work at the moment, being worked on)
 - Jemalloc (optimized malloc preventing heap fragmentation typically observed on permanently running software)
@@ -23,10 +26,9 @@ This script consists of me learning more advanced shell scripting concepts. Excu
 - Removing unnecessary NGINX modules and focusing on HTTP part only
 - Leveraging GCC optimization features
 - Enabling NGINX thread pools
-- Enabling NGNIX file actions
-- Focusing on HTTP3/QUIC (currently using OpenSSL's compatibility layer as there's only )
+- Enabling NGNIX file-aio
+- Focusing on HTTP3/QUIC (currently using OpenSSL's compatibility layer as it only supports client-side)
 
 # TODO:
 - BoringSSL
 - Automatically include hardened TLS configuration
-
