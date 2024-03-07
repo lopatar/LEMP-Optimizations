@@ -1,34 +1,32 @@
-# Optimized NGINX build script
-This script is intended to ease building optimized NGINX with the newest libraries automatically.
+# Optimized LEMP stack build stack
+This script is intended to ease building optimized LEMP stack **and more** using the newest software and libraries.
 
-Versions of all software being built including NGINX itself can be changed in the configuration section of the script. All actions are going to be handled automatically.
+Versions of each stack part/library can be tuned in the script header.
 
-This script consists of me learning more advanced shell scripting concepts. Excuse the mess :)
-
-**Did not bother handling missing dependencies, maybe later ;)**
+The script mostly consists of me experimenting with more advanced scripting concepts, please be kind :)
 
 **Architecture/CPU specific optimizations are tuned for Raspberry Pi 4B**
 
-**The script is supposed to be ran using zsh**
+**The script is written in zsh**
 
-# Additional software
-- Redis
-
-# Libraries
-- OpenSSL/BoringSSL (**BoringSSL** does not work at the moment, being worked on)
-- Jemalloc (optimized malloc preventing heap fragmentation typically observed on permanently running software)
-- ZLib (Cloudflare's optimized fork)
-- Libatomic
-- PCRE2 (supporting versions above range stated by NGINX)
-- NGX_Brotli (for better compression than gzip in certain cases)
+# Software installed
+- NGINX
+  - Removing unnecessary modules and focusing strictly on the HTTP part
+  - Enabling thread pools
+  - Enabling file-aio
+  - Prioritizing HTTP3/QUIC
+  - (https://github.com/google/ngx_brotli)[Brotli] compression
+  - Supporting PCRE2 versions higher than officially supported
+  - Including hardened TLS configuration
+- MariaDB **TODO**
+- PHP-FPM **TODO**
 
 # Other optimizations
-- Removing unnecessary NGINX modules and focusing on HTTP part only
+- OpenSSL/(https://boringssl.googlesource.com/boringssl)[BoringSSL] (**BoringSSL** is not currently supported)
+- (https://github.com/jemalloc/jemalloc)[Jemalloc] (optimized memory allocator preventing heap fragmentation typically observed on long-running software)
+- Cloudflare's (https://github.com/cloudflare/zlib)[optimized fork] of zlib
+- Libatomic
 - Leveraging GCC optimization features
-- Enabling NGINX thread pools
-- Enabling NGNIX file-aio
-- Focusing on HTTP3/QUIC (currently using OpenSSL's compatibility layer as it only supports client-side)
 
-# TODO:
-- BoringSSL
-- Automatically include hardened TLS configuration
+# Optional software
+- Redis
