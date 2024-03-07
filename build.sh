@@ -60,7 +60,7 @@ function buildModule() {
         tar -xf ${FUNC_ARCHIVE_NAME} -C "./${FUNC_FOLDER}" --strip-components=1
         rm -rf ${FUNC_ARCHIVE_NAME}
     else
-        git clone --recurse-submodules "-j${PARALLEL_TASKS} ${FUNC_URL}"
+        git clone --recurse-submodules -j${PARALLEL_TASKS} ${FUNC_URL}
     fi
     
     if [[ -n $FUNC_BUILD_ARGS ]]; then
@@ -70,17 +70,12 @@ function buildModule() {
     fi
 }
 
-function writeLine() {
-    echo -e "${1}\n"
-}
-
 function enableService() {
     local SERVICE_NAME=${1}
 
     systemctl daemon-reload
 
     systemctl restart "${SERVICE_NAME}"
-    writeLine "Started ${SERVICE_NAME}"
 }
 
 function kernelTuning()
@@ -99,15 +94,30 @@ function kernelTuning()
 
   ## End configure SWAP
 
-  if [[ -z $(sysctl -a | grep "vm.overcommit_memory = 1") ]]; then
-    echo "vm.overcommit_memory = 1" >> sysctl.conf
-    writeLine "Writing vm.overcommit_memory=1"
+  # shellcheck disable=SC2155
+  local SYSCTL_CONFIG=$(sysctl -a)
+
+  if [[ -z $(echo "${SYSCTL_CONFIG}" | grep "vm.overcommit_memory = 1") ]]; then
+    echo "vm.overcommit_memory = 1" >> /etc/sysctl.conf
   fi
 
-  if [[ -z $(sysctl -a | grep "vm.swappiness = 1") ]]; then
-    echo "vm.swappiness = 1" >> sysctl.conf
-    writeLine "Writing vm.swappiness=1"
+  if [[ -z $(echo "${SYSCTL_CONFIG}" | grep "vm.swappiness = 1") ]]; then
+    echo "vm.swappiness = 1" >> /etc/sysctl.conf
   fi
+
+  if [[ -z $(echo "${SYSCTL_CONFIG}" | grep "net.ipv4.ip_unprivileged_port_start = 1024") ]]; then
+    echo "net.ipv4.ip_unprivileged_port_start = 1024" >> /etc/sysctl.conf
+  fi
+
+  if [[ -z $(echo "${SYSCTL_CONFIG}" | grep "net.ipv4.ip_local_port_range = 1024  65535") ]]; then
+    echo "net.ipv4.ip_local_port_range = 1024 65535" >> /etc/sysctl.conf
+  fi
+
+  if [[ -z $(echo "${SYSCTL_CONFIG}" | grep "fs.file-max = 524280") ]]; then
+    echo "fs.file-max = 524280" >> /etc/sysctl.conf
+  fi
+
+  echo never | tee /sys/kernel/mm/transparent_hugepage/enabled /sys/kernel/mm/transparent_hugepage/defrag > /dev/null
 
   sysctl -p
 }
@@ -118,32 +128,31 @@ function installPackages()
     apt install -y devscripts build-essential ninja-build libsystemd-dev
 }
 
-CONF_PATH="./conf"
-SERVICES_PATH="./services"
+INSTALL_PATH=$(pwd)
+CONF_PATH="${INSTALL_PATH}/conf"
+SERVICES_PATH="${INSTALL_PATH}/services"
+
 SYSTEMD_SERVICES_PATH="/usr/lib/systemd/system"
 
 ## End internal utils
 
 ## Start module configuration
 
-INSTALL_PATH=$(pwd)
-
 JEMALLOC_FOLDER="jemalloc"
 JEMALLOC_URL="https://github.com/jemalloc/jemalloc/releases/download/${JEMALLOC_VERSION}/jemalloc-$JEMALLOC_VERSION.tar.bz2"
-JEMALLOC_BUILD_ARGS="CC=/usr/bin/clang EXTRA_CFLAGS='-I/usr/local/include -mtune=${M_TUNE} -O3 -funroll-loops -fPIE -fstack-protector-strong --param=ssp-buffer-size=4 -flto=auto -Wp,-D_FORTIFY_SOURCE=2 -fPIC' CXX=/usr/bin/clang++ EXTRA_CXXFLAGS='-I/usr/local/include -mtune=${M_TUNE} -O3 -funroll-loops -fPIE -fstack-protector-strong --param=ssp-buffer-size=4 -flto=auto -fPIC' EXTRA_LDFLAGS='-L/usr/local/lib -mtune=${M_TUNE}' ./configure && make -j${PARALLEL_TASKS} && make install"
-
+JEMALLOC_BUILD_ARGS="CC=/usr/bin/clang EXTRA_CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops' CXX=/usr/bin/clang++ EXTRA_CXXFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops' ./configure && make -j${PARALLEL_TASKS} && make install"
 
 ZLIB_FOLDER="zlib"
 ZLIB_URL="https://github.com/cloudflare/zlib/archive/refs/tags/v${ZLIB_VERSION}.tar.gz"
-ZLIB_BUILD_ARGS="CC=/usr/bin/clang CFLAGS='-I/usr/local/include -mtune=${M_TUNE} -O3 -funroll-loops -fPIE -fstack-protector-strong --param=ssp-buffer-size=4 -flto=auto -Wp,-D_FORTIFY_SOURCE=2 -fPIC' CPP=/usr/bin/clang++ SFLAGS='-I/usr/local/include -mtune=${M_TUNE} -O3 -funroll-loops -fPIE -fstack-protector-strong --param=ssp-buffer-size=4 -flto=auto -Wp,-D_FORTIFY_SOURCE=2 -fPIC' LD_LIBRARY_PATH=/usr/local/lib LDFLAGS='-L/usr/local/lib -l:libjemalloc.a -mtune=${M_TUNE}' ./configure && make -j${PARALLEL_TASKS} && make install"
+ZLIB_BUILD_ARGS="CC=/usr/bin/clang CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops' CPP=/usr/bin/clang++ SFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops' LD_LIBRARY_PATH=/usr/local/lib LDFLAGS='-L/usr/local/lib -l:libjemalloc.a' ./configure && make -j${PARALLEL_TASKS} && make install"
 
 LIBATOMIC_FOLDER="libatomic"
 LIBATOMIC_URL="https://github.com/ivmai/libatomic_ops/releases/download/v${LIBATOMIC_VERSION}/libatomic_ops-$LIBATOMIC_VERSION.tar.gz"
-LIBATOMIC_BUILD_ARGS="LT_SYS_LIBRARY_PATH=/usr/local/lib LD_LIBRARY_PATH=/usr/local/lib LDFLAGS='-L/usr/local/lib -l:libjemalloc.a -mtune=${M_TUNE}' CC=/usr/bin/clang CCAS=/usr/bin/clang CCASFLAGS='-I/usr/local/include -mtune=${M_TUNE} -O3 -funroll-loops -fPIE -fstack-protector-strong --param=ssp-buffer-size=4 -flto=auto -Wp,-D_FORTIFY_SOURCE=2 -fPIC' CFLAGS='-I/usr/local/include -mtune=${M_TUNE} -O3 -funroll-loops -fPIE -fstack-protector-strong --param=ssp-buffer-size=4 -flto=auto -Wp,-D_FORTIFY_SOURCE=2 -fPIC' CPPFLAGS='-I/usr/local/include -mtune=${M_TUNE} -O3 -funroll-loops -fPIE -fstack-protector-strong --param=ssp-buffer-size=4 -flto=auto -Wp,-D_FORTIFY_SOURCE=2 -fPIC' ./configure && make -j${PARALLEL_TASKS} && make install"
+LIBATOMIC_BUILD_ARGS="LT_SYS_LIBRARY_PATH=/usr/local/lib LD_LIBRARY_PATH=/usr/local/lib LDFLAGS='-L/usr/local/lib -l:libjemalloc.a' CC=/usr/bin/clang CCAS=/usr/bin/clang CCASFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -O3 -funroll-loops' CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -O3 -funroll-loops' CPPFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -O3 -funroll-loops' ./configure && make -j${PARALLEL_TASKS} && make install"
 
 PCRE2_FOLDER="libpcre"
 PCRE2_URL="https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${PCRE2_VERSION}/pcre2-${PCRE2_VERSION}.tar.gz"
-PCRE2_BUILD_ARGS="LT_SYS_LIBRARY_PATH=/usr/local/lib LD_LIBRARY_PATH=/usr/local/lib LDFLAGS='-L/usr/local/lib -l:libjemalloc.a -l:libz.a -mtune=${M_TUNE}' CC=/usr/bin/clang CFLAGS='-I/usr/local/include -mtune=${M_TUNE} -O3 -funroll-loops -fPIE -fstack-protector-strong --param=ssp-buffer-size=4 -flto=auto -Wp,-D_FORTIFY_SOURCE=2 -fPIC' CPPFLAGS='-I/usr/local/include -mtune=${M_TUNE} -O3 -funroll-loops -fPIE -fstack-protector-strong --param=ssp-buffer-size=4 -flto=auto -Wp,-D_FORTIFY_SOURCE=2 -fPIC' ./configure --enable-pcre2grep-libz --enable-jit && make -j${PARALLEL_TASKS} && make install"
+PCRE2_BUILD_ARGS="LT_SYS_LIBRARY_PATH=/usr/local/lib LD_LIBRARY_PATH=/usr/local/lib LDFLAGS='-L/usr/local/lib -l:libjemalloc.a -l:libz.a' CC=/usr/bin/clang CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops' CPPFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops' ./configure --enable-pcre2grep-libz --enable-jit && make -j${PARALLEL_TASKS} && make install"
 
 GOLANG_FOLDER="golang"
 GOLANG_URL="https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz"
@@ -151,7 +160,7 @@ GO_BIN="${INSTALL_PATH}/${GOLANG_FOLDER}/bin"
 
 BORINGSSL_FOLDER="boringssl"
 BORINGSSL_URL="https://boringssl.googlesource.com/boringssl"
-BORINGSSL_BUILD_ARGS="cmake -GNinja -B build -DOPENSSL_SMALL=1 -DGO_EXECUTABLE=${GO_BIN}/go -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCMAKE_C_FLAGS_INIT='-I/usr/local/include -mtune=${M_TUNE} -O3 -funroll-loops -fPIE -fstack-protector-strong --param=ssp-buffer-size=4 -flto=auto -flto-compression-level=3 -Wp,-D_FORTIFY_SOURCE=2 -fPIC' -DCMAKE_CXX_FLAGS_INIT='-I/usr/local/include -mtune=${M_TUNE} -O3 -funroll-loops -fPIE -fstack-protector-strong --param=ssp-buffer-size=4 -flto=auto -flto-compression-level=4 -Wp,-D_FORTIFY_SOURCE=2 -fPIC' -DCMAKE_SHARED_LINKER_FLAGS_INIT='-L/usr/local/lib -l:libjemalloc.a -mtune=${M_TUNE} -O3 -funroll-loops -fPIE -fstack-protector-strong --param=ssp-buffer-size=4 -flto=auto -flto-compression-level=3 -Wp,-D_FORTIFY_SOURCE=2 -fPIC' && ninja -j${PARALLEL_TASKS} -C build"
+BORINGSSL_BUILD_ARGS="cmake -GNinja -B build -DOPENSSL_SMALL=1 -DGO_EXECUTABLE=${GO_BIN}/go -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCMAKE_C_FLAGS_INIT='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops' -DCMAKE_CXX_FLAGS_INIT='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops' -DCMAKE_SHARED_LINKER_FLAGS_INIT='-L/usr/local/lib -l:libjemalloc.a' && ninja -j${PARALLEL_TASKS} -C build"
 
 OPENSSL_FOLDER="openssl"
 OPENSSL_URL="https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz"
@@ -177,38 +186,27 @@ installPackages
 kernelTuning
 
 buildModule $JEMALLOC_FOLDER $JEMALLOC_URL $JEMALLOC_BUILD_ARGS
-writeLine "Installed jemalloc"
 
 buildModule $ZLIB_FOLDER $ZLIB_URL $ZLIB_BUILD_ARGS
-writeLine "Installed zLib"
 buildModule $LIBATOMIC_FOLDER $LIBATOMIC_URL $LIBATOMIC_BUILD_ARGS
-writeLine "Installed libatomic"
-
 buildModule $PCRE2_FOLDER $PCRE2_URL $PCRE2_BUILD_ARGS
-writeLine "Installed pcre2"
 
 if [[ $USE_OPENSSL == 1 ]]; then
     buildModule $OPENSSL_FOLDER $OPENSSL_URL
-    writeLine "Extracted OpenSSL"
 else
     # Needs to be implemented!!!
     buildModule $GOLANG_FOLDER $GOLANG_URL
-    writeLine "Extracted Golang"
-    
     buildModule $BORINGSSL_FOLDER $BORINGSSL_URL $BORINGSSL_BUILD_ARGS
-    writeLine "Installed BoringSSL"
 fi
 
 buildModule $NGX_BROTLI_FOLDER $NGX_BROTLI_URL
-writeLine "Extracted NGX_Brotli"
 
 ## Start NGINX installation
 
 buildModule $NGINX_FOLDER $NGINX_URL $NGINX_BUILD_ARGS
-writeLine "Built NGINX"
     
-mv -f "${SERVICES_PATH}/${NGINX_FOLDER}.service" ${NGINX_SYSTEMD_SERVICE_PATH}
-mv -f "${CONF_PATH}/${NGINX_FOLDER}/*" "/etc/${NGINX_FOLDER}"
+cp -rf "${SERVICES_PATH}/${NGINX_FOLDER}.service" ${NGINX_SYSTEMD_SERVICE_PATH}
+cp -rf ${CONF_PATH}/${NGINX_FOLDER}/* "/etc/${NGINX_FOLDER}"
 
 ## Generate TLS ticket keys
 
@@ -224,10 +222,9 @@ enableService "${NGINX_FOLDER}.service"
 
 if [[ $USE_REDIS == 1 ]]; then
     buildModule $REDIS_FOLDER $REDIS_URL $REDIS_BUILD_ARGS
-    writeLine "Built Redis"
     
-    mv -f "${CONF_PATH}/${REDIS_CONFIG_FILE}" ${REDIS_CONFIG_PATH}
-    mv -f "${SERVICES_PATH}/${REDIS_FOLDER}.service" ${REDIS_SYSTEMD_SERVICE_PATH}
+    cp -rf "${CONF_PATH}/${REDIS_FOLDER}.conf" ${REDIS_CONFIG_PATH}
+    cp -rf "${SERVICES_PATH}/${REDIS_FOLDER}.service" ${REDIS_SYSTEMD_SERVICE_PATH}
 
     usermod -aG redis www-data
 
