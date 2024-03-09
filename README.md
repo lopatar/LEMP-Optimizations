@@ -15,16 +15,19 @@ The script mostly consists of me experimenting with more advanced scripting conc
   - Enabling thread pools
   - Enabling file-aio
   - Prioritizing HTTP3/QUIC
-  - (https://github.com/google/ngx_brotli)[Brotli] compression
+  - [Brotli](https://github.com/google/ngx_brotli) compression
   - Supporting PCRE2 versions higher than officially supported
   - Including hardened TLS configuration
-- MariaDB **TODO**
+- MariaDB
+  - Newer release than default package
+  - Architecture specific optimizations
+  - Optimized server configuration
 - PHP-FPM **TODO**
 
 # Other optimizations
-- OpenSSL/(https://boringssl.googlesource.com/boringssl)[BoringSSL] (**BoringSSL** is not currently supported)
-- (https://github.com/jemalloc/jemalloc)[Jemalloc] (optimized memory allocator preventing heap fragmentation typically observed on long-running software)
-- Cloudflare's (https://github.com/cloudflare/zlib)[optimized fork] of zlib
+- OpenSSL/[BoringSSL](https://boringssl.googlesource.com/boringssl) (**BoringSSL** is not currently supported)
+- [Jemalloc](https://github.com/jemalloc/jemalloc) (optimized memory allocator preventing heap fragmentation typically observed on long-running software)
+- Cloudflare's [optimized fork](https://github.com/cloudflare/zlib) of zlib
 - Libatomic
 - Leveraging GCC optimization features
 
