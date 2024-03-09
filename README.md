@@ -18,7 +18,10 @@ The script mostly consists of me experimenting with more advanced scripting conc
   - [Brotli](https://github.com/google/ngx_brotli) compression
   - Supporting PCRE2 versions higher than officially supported
   - Including hardened TLS configuration
-- MariaDB **TODO**
+- MariaDB
+  - Newer release than default package
+  - Architecture specific optimizations
+  - Optimized server configuration
 - PHP-FPM **TODO**
 
 # Other optimizations
