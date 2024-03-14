@@ -11,7 +11,27 @@ PARALLEL_TASKS=$(nproc)
 function purgePackage()
 {
   local PACKAGE_NAME=${1}
-  apt purge "${PACKAGE_NAME}*" -y -q
+  apt remove "${PACKAGE_NAME}*" -y
+}
+
+function purgeManagerPackages()
+{
+  if [[ $USE_OPENSSL == 1 ]]; then
+    purgePackage "openssl"
+  fi
+
+  if [[ $USE_NGINX == 1 ]]; then
+      purgePackage "nginx"
+  fi
+
+  if [[ $USE_MARIADB == 1 ]]; then
+      purgePackage "mariadb"
+      purgePackage "mysql"
+  fi
+
+  if [[ $USE_REDIS == 1 ]]; then
+      purgePackage "redis"
+  fi
 }
 
 function deleteCache()
@@ -112,7 +132,8 @@ function kernelTuning()
 function installPackages()
 {
     apt update && apt upgrade -y
-    apt install -y devscripts build-essential ninja-build libsystemd-dev apt-transport-https curl dpkg-dev gnutls-bin libgnutls28-dev libbrotli-dev clang passwd perl perl-doc python3 certbot python3-certbot python3-certbot-dns-standalone python3-certbot-nginx dphys-swapfile
+    apt install ca-certificates -y
+    apt install -y devscripts build-essential ninja-build libsystemd-dev apt-transport-https curl dpkg-dev gnutls-bin libgnutls28-dev libbrotli-dev clang passwd perl perl-doc python3 certbot python3-certbot python3-certbot-dns-standalone python3-certbot-nginx dphys-swapfile openjdk-17-jre openjdk-17-jdk
 }
 
 INSTALL_PATH=$(pwd)
@@ -130,19 +151,19 @@ CXX=/usr/bin/clang++
 
 JEMALLOC_FOLDER="jemalloc"
 JEMALLOC_URL="https://github.com/jemalloc/jemalloc/releases/download/${JEMALLOC_VERSION}/jemalloc-$JEMALLOC_VERSION.tar.bz2"
-JEMALLOC_BUILD_ARGS="CC=/usr/bin/clang EXTRA_CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' CXX=/usr/bin/clang++ EXTRA_CXXFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' ./configure && make -j${PARALLEL_TASKS} && make install -j${PARALLEL_TASKS}"
+JEMALLOC_BUILD_ARGS="CC=/usr/bin/clang EXTRA_CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' CXX=/usr/bin/clang++ EXTRA_CXXFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -Ofast -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' ./configure && make -j${PARALLEL_TASKS} && make install"
 
 ZLIB_FOLDER="zlib"
 ZLIB_URL="https://github.com/cloudflare/zlib/archive/refs/tags/v${ZLIB_VERSION}.tar.gz"
-ZLIB_BUILD_ARGS="CC=/usr/bin/clang CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -Ofast -funroll-loops -flto=auto -ffast-math -fPIC' CPP=/usr/bin/clang++ SFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -Ofast -funroll-loops -flto=auto -ffast-math -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -fPIC' LD_LIBRARY_PATH=/usr/local/lib LDFLAGS='-L/usr/local/lib -l:libjemalloc.a' ./configure && make -j${PARALLEL_TASKS} && make install -j${PARALLEL_TASKS}"
+ZLIB_BUILD_ARGS="CC=/usr/bin/clang CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' CPP=/usr/bin/clang++ SFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -Ofast -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' LD_LIBRARY_PATH=/usr/local/lib LDFLAGS='-L/usr/local/lib -l:libjemalloc.a' ./configure && make -j${PARALLEL_TASKS} && make install"
 
 LIBATOMIC_FOLDER="libatomic"
 LIBATOMIC_URL="https://github.com/ivmai/libatomic_ops/releases/download/v${LIBATOMIC_VERSION}/libatomic_ops-$LIBATOMIC_VERSION.tar.gz"
-LIBATOMIC_BUILD_ARGS="LT_SYS_LIBRARY_PATH=/usr/local/lib LD_LIBRARY_PATH=/usr/local/lib LDFLAGS='-L/usr/local/lib -l:libjemalloc.a' CC=/usr/bin/clang CCAS=/usr/bin/clang CCASFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -Ofast -funroll-loops -flto=auto -ffast-math -fPIC' CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -Ofast -funroll-loops -flto=auto -ffast-math -fPIC' CPPFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -Ofast -funroll-loops -flto=auto -ffast-math -fPIC' ./configure && make -j${PARALLEL_TASKS} && make install -j${PARALLEL_TASKS}"
+LIBATOMIC_BUILD_ARGS="LT_SYS_LIBRARY_PATH=/usr/local/lib LD_LIBRARY_PATH=/usr/local/lib LDFLAGS='-L/usr/local/lib -l:libjemalloc.a' CC=/usr/bin/clang CCAS=/usr/bin/clang CCASFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -Ofast -funroll-loops -fPIC' CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -Ofast -funroll-loops -fPIC' CPPFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -Ofast -funroll-loops -fPIC' ./configure && make -j${PARALLEL_TASKS} && make install"
 
 PCRE2_FOLDER="libpcre"
 PCRE2_URL="https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${PCRE2_VERSION}/pcre2-${PCRE2_VERSION}.tar.gz"
-PCRE2_BUILD_ARGS="LT_SYS_LIBRARY_PATH=/usr/local/lib LD_LIBRARY_PATH=/usr/local/lib LDFLAGS='-L/usr/local/lib -l:libjemalloc.a -l:libz.a' CC=/usr/bin/clang CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -Ofast -funroll-loops -flto=auto -ffast-math -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -fPIC' CPPFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -Ofast -funroll-loops -flto=auto -ffast-math -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -fPIC' ./configure --enable-pcre2grep-libz --enable-jit --enable-pcre2-16 --enable-pcre2-32 && make -j${PARALLEL_TASKS} && make install -j${PARALLEL_TASKS}"
+PCRE2_BUILD_ARGS="LT_SYS_LIBRARY_PATH=/usr/local/lib LD_LIBRARY_PATH=/usr/local/lib LDFLAGS='-L/usr/local/lib -l:libjemalloc.a -l:libz.a' CC=/usr/bin/clang CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -Ofast -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' CPPFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' ./configure --enable-pcre2grep-libz --enable-jit --enable-pcre2-16 --enable-pcre2-32 && make -j${PARALLEL_TASKS} && make install"
 
 GOLANG_FOLDER="golang"
 GOLANG_URL="https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz"
@@ -150,23 +171,23 @@ GO_BIN="${INSTALL_PATH}/${GOLANG_FOLDER}/bin"
 
 BORINGSSL_FOLDER="boringssl"
 BORINGSSL_URL="https://boringssl.googlesource.com/boringssl"
-BORINGSSL_BUILD_ARGS="cmake -GNinja -B build -DOPENSSL_SMALL=1 -DGO_EXECUTABLE=${GO_BIN}/go -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCMAKE_C_FLAGS_INIT='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -Ofast -funroll-loops -flto=auto -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN' -DCMAKE_CXX_FLAGS_INIT='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -Ofast -funroll-loops -flto=auto -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN' -DCMAKE_SHARED_LINKER_FLAGS_INIT='-L/usr/local/lib -l:libjemalloc.a' && ninja -j${PARALLEL_TASKS} -C build"
+BORINGSSL_BUILD_ARGS="cmake -GNinja -B build -DOPENSSL_SMALL=1 -DGO_EXECUTABLE=${GO_BIN}/go -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCMAKE_C_FLAGS_INIT='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops' -DCMAKE_CXX_FLAGS_INIT='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops' -DCMAKE_SHARED_LINKER_FLAGS_INIT='-L/usr/local/lib -l:libjemalloc.a' && ninja -j${PARALLEL_TASKS} -C build"
 
 OPENSSL_FOLDER="openssl"
 OPENSSL_URL="https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz"
-OPENSSL_BUILD_ARGS="KERNEL_BITS=64 ./config -Wno-free-nonheap-object no-weak-ssl-ciphers no-docs no-legacy no-ssl3 no-tests enable-brotli enable-ktls no-unit-test threads thread-pool default-thread-pool zlib -DOPENSSL_SMALL=1 -DOPENSSL_NO_HEARTBEATS -Ofast -funroll-loops -flto=auto -mtune=${M_TUNE} -ffunction-sections -fdata-sections -I/usr/local/include -fPIC -Wl,-rpath,/usr/local/lib -Wl,-ljemalloc && make -j${PARALLEL_TASKS} && make install -j${PARALLEL_TASKS}"
+OPENSSL_BUILD_ARGS="KERNEL_BITS=64 ./config -Wno-free-nonheap-object no-weak-ssl-ciphers no-docs no-legacy no-ssl3 no-tests enable-brotli enable-ktls no-unit-test threads thread-pool default-thread-pool zlib -DOPENSSL_SMALL=1 -DOPENSSL_NO_HEARTBEATS -O3 -mtune=${M_TUNE} -funroll-loops -flto=auto -ffunction-sections -fdata-sections -I/usr/local/include -fPIC -Wl,-rpath,/usr/local/lib -Wl,-ljemalloc && make -j${PARALLEL_TASKS} && make install"
 
 NGX_BROTLI_FOLDER="ngx_brotli"
 NGX_BROTLI_URL="https://github.com/google/ngx_brotli"
 
 NGINX_FOLDER="nginx"
 NGINX_URL="https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz"
-NGINX_BUILD_ARGS="./configure --with-compat --with-cc-opt='-I/usr/local/include -mtune=${M_TUNE} -fPIE -fstack-protector-strong --param=ssp-buffer-size=4 -Ofast -funroll-loops -flto=auto -ffast-math -Wp,-D_FORTIFY_SOURCE=2 -Wno-implicit-fallthrough -Wno-implicit-function-declaration -Wno-discarded-qualifiers -Wno-unused-variable -Wno-error' --with-ld-opt='-L/usr/local/lib -l:libjemalloc.a -l:libatomic_ops.a -l:libpcre2-8.a -l:libz.a -mtune=${M_TUNE} -Ofast -funroll-loops -flto=auto -ffast-math -fPIE -fstack-protector-strong --param=ssp-buffer-size=4 -Wp,-D_FORTIFY_SOURCE=2 -fPIC' --prefix=/etc/nginx --sbin-path=/usr/sbin/nginx --modules-path=/etc/nginx/modules --conf-path=/etc/nginx/nginx.conf --error-log-path=/var/log/nginx/error.log --http-log-path=/var/log/nginx/access.log --pid-path=/var/run/nginx.pid --lock-path=/var/run/nginx.lock --http-client-body-temp-path=/var/cache/nginx/client_temp --http-proxy-temp-path=/var/cache/nginx/proxy_temp --http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp --http-uwsgi-temp-path=/var/cache/nginx/uwsgi_temp --http-scgi-temp-path=/var/cache/nginx/scgi_temp --user=www-data --group=www-data --with-file-aio --with-threads --with-pcre --with-libatomic --with-pcre-jit --with-http_dav_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_ssl_module --without-select_module --without-poll_module --without-http_mirror_module --without-http_geo_module --without-http_split_clients_module --without-http_uwsgi_module --without-http_scgi_module --without-http_grpc_module --without-http_memcached_module --without-http_empty_gif_module --without-mail_pop3_module --without-mail_imap_module --without-mail_smtp_module --without-stream_limit_conn_module --without-stream_access_module --without-stream_geo_module --without-stream_map_module --without-stream_split_clients_module --without-stream_return_module --without-stream_set_module --without-stream_upstream_hash_module --without-stream_upstream_least_conn_module --without-stream_upstream_random_module --without-stream_upstream_zone_module --with-http_v2_module --with-http_v3_module --add-dynamic-module=${INSTALL_PATH}/ngx_brotli && make -j${PARALLEL_TASKS} && make install -j${PARALLEL_TASKS}"
+NGINX_BUILD_ARGS="./configure --with-compat --with-cc-opt='-I/usr/local/include -mtune=${M_TUNE} -Ofast -ffast-math -funroll-loops -fPIE -fstack-protector-strong --param=ssp-buffer-size=4 -flto=auto -Wp,-D_FORTIFY_SOURCE=2 -Wno-implicit-fallthrough -Wno-implicit-function-declaration -Wno-discarded-qualifiers -Wno-unused-variable -Wno-error' --with-ld-opt='-L/usr/local/lib -l:libjemalloc.a -l:libatomic_ops.a -l:libpcre2-8.a -l:libz.a -mtune=${M_TUNE} -Ofast -ffast-math -funroll-loops -fPIE -fstack-protector-strong --param=ssp-buffer-size=4 -flto=auto -Wp,-D_FORTIFY_SOURCE=2 -fPIC' --prefix=/etc/nginx --sbin-path=/usr/sbin/nginx --modules-path=/etc/nginx/modules --conf-path=/etc/nginx/nginx.conf --error-log-path=/var/log/nginx/error.log --http-log-path=/var/log/nginx/access.log --pid-path=/var/run/nginx.pid --lock-path=/var/run/nginx.lock --http-client-body-temp-path=/var/cache/nginx/client_temp --http-proxy-temp-path=/var/cache/nginx/proxy_temp --http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp --http-uwsgi-temp-path=/var/cache/nginx/uwsgi_temp --http-scgi-temp-path=/var/cache/nginx/scgi_temp --user=www-data --group=www-data --with-file-aio --with-threads --with-pcre --with-libatomic --with-pcre-jit --with-http_dav_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_ssl_module --without-select_module --without-poll_module --without-http_mirror_module --without-http_geo_module --without-http_split_clients_module --without-http_uwsgi_module --without-http_scgi_module --without-http_grpc_module --without-http_memcached_module --without-http_empty_gif_module --without-mail_pop3_module --without-mail_imap_module --without-mail_smtp_module --without-stream_limit_conn_module --without-stream_access_module --without-stream_geo_module --without-stream_map_module --without-stream_split_clients_module --without-stream_return_module --without-stream_set_module --without-stream_upstream_hash_module --without-stream_upstream_least_conn_module --without-stream_upstream_random_module --without-stream_upstream_zone_module --with-http_v2_module --with-http_v3_module --add-dynamic-module=${INSTALL_PATH}/ngx_brotli && make -j${PARALLEL_TASKS} && make install"
 NGINX_SYSTEMD_SERVICE_PATH="/usr/lib/systemd/system/${NGINX_FOLDER}.service"
 
 REDIS_FOLDER="redis"
 REDIS_URL="https://github.com/redis/redis/archive/${REDIS_VERSION}.tar.gz"
-REDIS_BUILD_ARGS="make USE_SYSTEMD=yes MALLLOC=jemalloc BUILD_TLS=no REDIS_CFLAGS=\"-I/usr/local/include -Ofast -funroll-loops -flto=auto --param=ssp-buffer-size=4 -mtune=${M_TUNE}\" REDIS_LDFLAGS=\"-L/usr/local/lib -l:libjemalloc.a \" -j${PARALLEL_TASKS} && make install -j${PARALLEL_TASKS}"
+REDIS_BUILD_ARGS="make USE_SYSTEMD=yes MALLLOC=jemalloc BUILD_TLS=no REDIS_CFLAGS=\"-I/usr/local/include -Ofast -funroll-loops --param=ssp-buffer-size=4 -flto=auto -mtune=${M_TUNE}\" REDIS_LDFLAGS=\"-L/usr/local/lib -l:libjemalloc.a \" -j${PARALLEL_TASKS} && make install"
 REDIS_CONFIG_PATH="/etc/redis/${REDIS_FOLDER}.conf"
 REDIS_SYSTEMD_SERVICE_PATH="${SYSTEMD_SERVICES_PATH}/${REDIS_FOLDER}.service"
 
@@ -206,7 +227,7 @@ function getMariaDbSource()
 
 deleteCache
 
-deleteManagerPackages
+purgeManagerPackages
 installPackages
 
 kernelTuning
@@ -267,6 +288,7 @@ if [[ $USE_MARIADB == 1 ]]; then
 
   groupadd mysql
   useradd -g mysql mysql
+  usermod -aG mysql www-data
 
   cd "${MARIADB_INSTALLATION_FOLDER}" || exit
 
