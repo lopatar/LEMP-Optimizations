@@ -1,21 +1,71 @@
 #!/bin/zsh
+## Essential utils
+
+LOG_ENABLED=1
+LOG_FILE="LEMP-build.log"
+
+function logToFile()
+{
+  local MESSAGE="LOG: ${1}"
+  echo "${MESSAGE}" >> "${LOG_FILE}"
+}
+
+function printLine()
+{
+  local MESSAGE="${1}......"
+  echo "${MESSAGE}"
+
+  if [[ $LOG_ENABLED == 1 ]]; then
+    logToFile "${MESSAGE}"
+  fi
+}
+
+function die()
+{
+  printLine "Exiting"
+
+  set -e
+  /bin/false
+}
+
+function checkRoot()
+{
+  printLine "Checking for root"
+
+  if [[ $EUID != 0 ]]; then
+      printLine "Must be run as root!"
+      die
+  fi
+}
+
+## End essential utils
+
 ## Configuration
 
-chmod +x ./config.sh
+rm -rf "${LOG_FILE}"
+checkRoot
+
+printLine "Loading configuration"
 source ./config.sh
+printConfiguration
 
 ## End configuration
 
 PARALLEL_TASKS=$(nproc)
+printLine "Detected parallel tasks: ${PARALLEL_TASKS}"
 
 function purgePackage()
 {
-  local PACKAGE_NAME=${1}
-  apt remove "${PACKAGE_NAME}*" -y
+  local PACKAGE_NAME="${1}*"
+  printLine "Removing ${PACKAGE_NAME}"
+
+  apt remove "${PACKAGE_NAME}" -yq
 }
 
 function purgeManagerPackages()
 {
+  printLine "Removing package manager installed packages that are going to be replaced"
+
   if [[ $USE_OPENSSL == 1 ]]; then
     purgePackage "openssl"
   fi
@@ -36,12 +86,15 @@ function purgeManagerPackages()
 
 function deleteCache()
 {
+    printLine "Deleting cache files"
+
     for FILE in *
     do
         if [[ $FILE == conf || $FILE == services || $FILE == *.md || $FILE == *.sh ]]; then
             continue
         fi
-        
+
+        printLine "Deleted cache file ${FILE}"
         rm -rf "${FILE}"
     done
 }
@@ -60,16 +113,27 @@ function buildModule() {
     fi
 
     if [[ $FUNC_ARCHIVE_NAME == *.tar.?z* ]]; then
+        printLine "Downloading ${FUNC_FOLDER} from ${FUNC_URL}"
         wget "${FUNC_URL}" -O ${FUNC_ARCHIVE_NAME} --max-redirect=1
+
+        printLine "Creating extraction folder ${FUNC_FOLDER} for ${FUNC_FOLDER}"
         mkdir "${FUNC_FOLDER}"
+
+        printLine "Extracting ${FUNC_ARCHIVE_NAME} to ./${FUNC_FOLDER}"
         tar -xf ${FUNC_ARCHIVE_NAME} -C "./${FUNC_FOLDER}" --strip-components=1
+
+        printLine "Removing old ${FUNC_ARCHIVE_NAME}"
         rm -rf ${FUNC_ARCHIVE_NAME}
     else
+        printLine "Cloning ${FUNC_FOLDER} from ${FUNC_URL}"
         git clone --recurse-submodules -j${PARALLEL_TASKS} ${FUNC_URL}
     fi
     
     if [[ -n $FUNC_BUILD_ARGS ]]; then
-        cd "${FUNC_FOLDER}" || exit
+        printLine "Entering ${FUNC_FOLDER} folder"
+        cd "${FUNC_FOLDER}" || die
+
+        printLine "Executing ${FUNC_FOLDER} build arguments"
         eval "${FUNC_BUILD_ARGS}"
         cd ../
     fi
@@ -77,30 +141,41 @@ function buildModule() {
 
 function enableService() {
     local SERVICE_NAME=${1}
+    printLine "Installing ${SERVICE_NAME} service"
 
+    printLine "Reloading systemd daemon"
     systemctl daemon-reload
+
+    printLine "Enabling ${SERVICE_NAME} service"
     systemctl enable "${SERVICE_NAME}"
 
+    printLine "Starting ${SERVICE_NAME} service"
     systemctl start "${SERVICE_NAME}"
 }
 
 function kernelTuning()
 {
+  printLine "Doing system tuning"
+
   # shellcheck disable=SC2155
   local ROOT_MOUNT=$(findmnt -n / | awk '{ print $2 }')
   # shellcheck disable=SC2155
   local SYSTEM_DEVICE=$(lsblk -no pkname "${ROOT_MOUNT}")
 
+  printLine "Setting mq-deadline scheduler for ${SYSTEM_DEVICE}"
   echo mq-deadline > "/sys/block/${SYSTEM_DEVICE}/queue/scheduler"
 
   ## Configure SWAP
 
   if [[ $SWAP_ENABLE == 1 ]]; then
+      printLine "Configuring SWAP with factor: ${SWAP_FACTOR} and max: ${SWAP_MAX_MB}"
       echo -e "CONF_SWAPFACTOR=${SWAP_FACTOR}\nCONF_MAXSWAP=${SWAP_MAX_MB}" > /etc/dphys-swapfile
   else
+    printLine "Uninstalling SWAP"
     dphys-swapfile uninstall
   fi
 
+  printLine "Restarting dphys-swapfile.service"
   systemctl restart dphys-swapfile.service
 
   ## End configure SWAP
@@ -109,35 +184,47 @@ function kernelTuning()
   local SYSCTL_CONFIG=$(sysctl -a)
 
   if [[ -z $(echo "${SYSCTL_CONFIG}" | grep "vm.overcommit_memory = 1") ]]; then
+    printLine "Setting vm.overcommit_memory = 1"
     echo "vm.overcommit_memory = 1" >> /etc/sysctl.conf
   fi
 
   if [[ -z $(echo "${SYSCTL_CONFIG}" | grep "vm.swappiness = 1") ]]; then
+    printLine "Setting vm.swappiness = 1"
     echo "vm.swappiness = 1" >> /etc/sysctl.conf
   fi
 
   if [[ -z $(echo "${SYSCTL_CONFIG}" | grep "net.ipv4.ip_unprivileged_port_start = 1024") ]]; then
+    printLine "Setting net.ipv4.ip_unprivileged_port_start = 1024"
     echo "net.ipv4.ip_unprivileged_port_start = 1024" >> /etc/sysctl.conf
   fi
 
   if [[ -z $(echo "${SYSCTL_CONFIG}" | grep "fs.file-max = 524280") ]]; then
+    printLine "Setting fs.file-max = 524280"
     echo "fs.file-max = 524280" >> /etc/sysctl.conf
   fi
 
+  printLine "Disabling hugepages & defrag"
   echo never | tee /sys/kernel/mm/transparent_hugepage/enabled /sys/kernel/mm/transparent_hugepage/defrag > /dev/null
 
+  printLine "Reloading systemd configuration"
   sysctl -p
 }
 
 function installPackage()
 {
   local PACKAGE_STRING=${1}
-  apt install -y --no-install-suggests --fix-broken ${PACKAGE_STRING}
+
+  printLine "Installing ${PACKAGE_NAME}"
+  apt install -yq --no-install-suggests --fix-broken "${PACKAGE_STRING}"
 }
 
 function installPackages()
 {
-    apt update && apt upgrade -y
+    printLine "Installing required packages"
+
+    printLine "Updating repositories & upgrading packages"
+    apt update && apt upgrade -yq
+
     installPackage "ca-certificates"
     installPackage "devscripts build-essential ninja-build libsystemd-dev apt-transport-https curl dpkg-dev gnutls-bin libgnutls28-dev libbrotli-dev clang passwd perl perl-doc python3 certbot python3-certbot python3-certbot-dns-standalone python3-certbot-nginx dphys-swapfile openjdk-17-jre openjdk-17-jdk"
 }
@@ -324,3 +411,5 @@ if [[ $USE_MARIADB == 1 ]]; then
   systemctl start "${MARIADB_FOLDER}.service"
 fi
 ## End MariaDB upgrade
+
+die

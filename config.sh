@@ -21,3 +21,39 @@ GOLANG_VERSION="1.22.1"
 OPENSSL_VERSION="3.2.1"
 
 M_TUNE="cortex-a72"
+
+function printConfVar()
+{
+  # shellcheck disable=SC2028
+  echo "$1 => \"$(eval echo \$"$1")\""
+}
+
+function printConfiguration()
+{
+  printLine "Printing configuration"
+
+  printConfVar USE_OPENSSL
+  printConfVar USE_NGINX
+  printConfVar USE_MARIADB
+  printConfVar USE_REDIS
+
+  printConfVar SWAP_ENABLE
+  printConfVar SWAP_FACTOR
+  printConfVar SWAP_MAX_MB
+
+  printConfVar NGINX_VERSION
+  printConfVar MARIADB_VERSION
+  printConfVar REDIS_VERSION
+
+  printConfVar JEMALLOC_VERSION
+  printConfVar ZLIB_VERSION
+  printConfVar LIBATOMIC_VERSION
+  printConfVar PCRE2_VERSION
+  printConfVar GOLANG_VERSION
+  printConfVar OPENSSL_VERSION
+
+  printConfVar M_TUNE
+}
+
+
+
