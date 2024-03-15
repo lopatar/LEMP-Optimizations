@@ -129,11 +129,17 @@ function kernelTuning()
   sysctl -p
 }
 
+function installPackage()
+{
+  local PACKAGE_STRING=${1}
+  apt install -y --no-install-suggests --fix-broken ${PACKAGE_STRING}
+}
+
 function installPackages()
 {
     apt update && apt upgrade -y
-    apt install ca-certificates -y
-    apt install -y devscripts build-essential ninja-build libsystemd-dev apt-transport-https curl dpkg-dev gnutls-bin libgnutls28-dev libbrotli-dev clang passwd perl perl-doc python3 certbot python3-certbot python3-certbot-dns-standalone python3-certbot-nginx dphys-swapfile openjdk-17-jre openjdk-17-jdk
+    installPackage "ca-certificates"
+    installPackage "devscripts build-essential ninja-build libsystemd-dev apt-transport-https curl dpkg-dev gnutls-bin libgnutls28-dev libbrotli-dev clang passwd perl perl-doc python3 certbot python3-certbot python3-certbot-dns-standalone python3-certbot-nginx dphys-swapfile openjdk-17-jre openjdk-17-jdk"
 }
 
 INSTALL_PATH=$(pwd)
