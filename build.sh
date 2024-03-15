@@ -6,17 +6,19 @@ LOG_FILE="LEMP-build.log"
 
 function logToFile()
 {
-  local MESSAGE="LOG: ${1}"
-  echo "${MESSAGE}" >> "${LOG_FILE}"
+  local CURRENT_DATE=$(date)
+  local MESSAGE="LOG [${CURRENT_DATE}]: ${1}"
+  echo "${MESSAGE}" | tee -a "${LOG_FILE}"
 }
 
 function printLine()
 {
   local MESSAGE="${1}......"
-  echo "${MESSAGE}"
 
   if [[ $LOG_ENABLED == 1 ]]; then
     logToFile "${MESSAGE}"
+  else
+    echo "${MESSAGE}"
   fi
 }
 
