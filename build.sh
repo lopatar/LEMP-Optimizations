@@ -1,43 +1,102 @@
 #!/bin/zsh
+## Essential utils
+
+LOG_ENABLED=1
+LOG_FILE="LEMP-build.log"
+
+function logToFile()
+{
+  local CURRENT_DATE=$(date)
+  local MESSAGE="LOG [${CURRENT_DATE}]: ${1}"
+  echo "${MESSAGE}" | tee -a "${LOG_FILE}"
+}
+
+function printLine()
+{
+  local MESSAGE="${1}......"
+
+  if [[ $LOG_ENABLED == 1 ]]; then
+    logToFile "${MESSAGE}"
+  else
+    echo "${MESSAGE}"
+  fi
+}
+
+function die()
+{
+  printLine "Exiting"
+
+  set -e
+  /bin/false
+}
+
+function checkRoot()
+{
+  printLine "Checking for root"
+
+  if [[ $EUID != 0 ]]; then
+      printLine "Must be run as root!"
+      die
+  fi
+}
+
+## End essential utils
+
 ## Configuration
 
-# BoringSSL not implemented in NGINX build
-USE_OPENSSL=1
-USE_NGINX=1
-USE_MARIADB=1
-USE_REDIS=1
+rm -rf "${LOG_FILE}"
+checkRoot
 
-NGINX_VERSION="1.25.4"
-MARIADB_VERSION="11.3"
-REDIS_VERSION="7.2.4"
-
-JEMALLOC_VERSION="5.3.0"
-ZLIB_VERSION="1.2.11"
-LIBATOMIC_VERSION="7.8.2"
-PCRE2_VERSION="10.43"
-GOLANG_VERSION="1.22.0"
-OPENSSL_VERSION="3.2.1"
-
-M_TUNE="cortex-a72"
-
-SWAP_FILE="/mnt/ssd512/ssd-swap"
-SWAP_FACTOR=2
-SWAP_MAX_MB=8192
+printLine "Loading configuration"
+source ./config.sh
+printConfiguration
 
 ## End configuration
 
-## Start internal utils
-
 PARALLEL_TASKS=$(nproc)
+printLine "Detected parallel tasks: ${PARALLEL_TASKS}"
+
+function purgePackage()
+{
+  local PACKAGE_NAME="${1}*"
+  printLine "Removing ${PACKAGE_NAME}"
+
+  apt remove "${PACKAGE_NAME}" -yq
+}
+
+function purgeManagerPackages()
+{
+  printLine "Removing package manager installed packages that are going to be replaced"
+
+  if [[ $USE_OPENSSL == 1 ]]; then
+    purgePackage "openssl"
+  fi
+
+  if [[ $USE_NGINX == 1 ]]; then
+      purgePackage "nginx"
+  fi
+
+  if [[ $USE_MARIADB == 1 ]]; then
+      purgePackage "mariadb"
+      purgePackage "mysql"
+  fi
+
+  if [[ $USE_REDIS == 1 ]]; then
+      purgePackage "redis"
+  fi
+}
 
 function deleteCache()
 {
+    printLine "Deleting cache files"
+
     for FILE in *
     do
         if [[ $FILE == conf || $FILE == services || $FILE == *.md || $FILE == *.sh ]]; then
             continue
         fi
-        
+
+        printLine "Deleted cache file ${FILE}"
         rm -rf "${FILE}"
     done
 }
@@ -56,16 +115,27 @@ function buildModule() {
     fi
 
     if [[ $FUNC_ARCHIVE_NAME == *.tar.?z* ]]; then
+        printLine "Downloading ${FUNC_FOLDER} from ${FUNC_URL}"
         wget "${FUNC_URL}" -O ${FUNC_ARCHIVE_NAME} --max-redirect=1
+
+        printLine "Creating extraction folder ${FUNC_FOLDER} for ${FUNC_FOLDER}"
         mkdir "${FUNC_FOLDER}"
+
+        printLine "Extracting ${FUNC_ARCHIVE_NAME} to ./${FUNC_FOLDER}"
         tar -xf ${FUNC_ARCHIVE_NAME} -C "./${FUNC_FOLDER}" --strip-components=1
+
+        printLine "Removing old ${FUNC_ARCHIVE_NAME}"
         rm -rf ${FUNC_ARCHIVE_NAME}
     else
+        printLine "Cloning ${FUNC_FOLDER} from ${FUNC_URL}"
         git clone --recurse-submodules -j${PARALLEL_TASKS} ${FUNC_URL}
     fi
     
     if [[ -n $FUNC_BUILD_ARGS ]]; then
-        cd "${FUNC_FOLDER}" || exit
+        printLine "Entering ${FUNC_FOLDER} folder"
+        cd "${FUNC_FOLDER}" || die
+
+        printLine "Executing ${FUNC_FOLDER} build arguments"
         eval "${FUNC_BUILD_ARGS}"
         cd ../
     fi
@@ -73,25 +143,41 @@ function buildModule() {
 
 function enableService() {
     local SERVICE_NAME=${1}
+    printLine "Installing ${SERVICE_NAME} service"
 
+    printLine "Reloading systemd daemon"
     systemctl daemon-reload
+
+    printLine "Enabling ${SERVICE_NAME} service"
     systemctl enable "${SERVICE_NAME}"
 
+    printLine "Starting ${SERVICE_NAME} service"
     systemctl start "${SERVICE_NAME}"
 }
 
 function kernelTuning()
 {
+  printLine "Doing system tuning"
+
   # shellcheck disable=SC2155
   local ROOT_MOUNT=$(findmnt -n / | awk '{ print $2 }')
   # shellcheck disable=SC2155
   local SYSTEM_DEVICE=$(lsblk -no pkname "${ROOT_MOUNT}")
 
+  printLine "Setting mq-deadline scheduler for ${SYSTEM_DEVICE}"
   echo mq-deadline > "/sys/block/${SYSTEM_DEVICE}/queue/scheduler"
 
   ## Configure SWAP
 
-  echo -e "CONF_SWAPFILE=${SWAP_FILE}\nCONF_SWAPFACTOR=${SWAP_FACTOR}\nCONF_MAXSWAP=${SWAP_MAX_MB}" > /etc/dphys-swapfile
+  if [[ $SWAP_ENABLE == 1 ]]; then
+      printLine "Configuring SWAP with factor: ${SWAP_FACTOR} and max: ${SWAP_MAX_MB}"
+      echo -e "CONF_SWAPFACTOR=${SWAP_FACTOR}\nCONF_MAXSWAP=${SWAP_MAX_MB}" > /etc/dphys-swapfile
+  else
+    printLine "Uninstalling SWAP"
+    dphys-swapfile uninstall
+  fi
+
+  printLine "Restarting dphys-swapfile.service"
   systemctl restart dphys-swapfile.service
 
   ## End configure SWAP
@@ -100,30 +186,49 @@ function kernelTuning()
   local SYSCTL_CONFIG=$(sysctl -a)
 
   if [[ -z $(echo "${SYSCTL_CONFIG}" | grep "vm.overcommit_memory = 1") ]]; then
+    printLine "Setting vm.overcommit_memory = 1"
     echo "vm.overcommit_memory = 1" >> /etc/sysctl.conf
   fi
 
   if [[ -z $(echo "${SYSCTL_CONFIG}" | grep "vm.swappiness = 1") ]]; then
+    printLine "Setting vm.swappiness = 1"
     echo "vm.swappiness = 1" >> /etc/sysctl.conf
   fi
 
   if [[ -z $(echo "${SYSCTL_CONFIG}" | grep "net.ipv4.ip_unprivileged_port_start = 1024") ]]; then
+    printLine "Setting net.ipv4.ip_unprivileged_port_start = 1024"
     echo "net.ipv4.ip_unprivileged_port_start = 1024" >> /etc/sysctl.conf
   fi
 
   if [[ -z $(echo "${SYSCTL_CONFIG}" | grep "fs.file-max = 524280") ]]; then
+    printLine "Setting fs.file-max = 524280"
     echo "fs.file-max = 524280" >> /etc/sysctl.conf
   fi
 
+  printLine "Disabling hugepages & defrag"
   echo never | tee /sys/kernel/mm/transparent_hugepage/enabled /sys/kernel/mm/transparent_hugepage/defrag > /dev/null
 
+  printLine "Reloading systemd configuration"
   sysctl -p
+}
+
+function installPackage()
+{
+  local PACKAGE_STRING=${1}
+
+  printLine "Installing ${PACKAGE_NAME}"
+  apt install -yq --no-install-suggests --fix-broken "${PACKAGE_STRING}"
 }
 
 function installPackages()
 {
-    apt update && apt upgrade -y
-    apt install -y devscripts build-essential ninja-build libsystemd-dev apt-transport-https curl dpkg-dev gnutls-bin libgnutls28-dev libbrotli-dev clang useradd
+    printLine "Installing required packages"
+
+    printLine "Updating repositories & upgrading packages"
+    apt update && apt upgrade -yq
+
+    installPackage "ca-certificates"
+    installPackage "devscripts build-essential ninja-build libsystemd-dev apt-transport-https curl dpkg-dev gnutls-bin libgnutls28-dev libbrotli-dev clang passwd perl perl-doc python3 certbot python3-certbot python3-certbot-dns-standalone python3-certbot-nginx dphys-swapfile openjdk-17-jre openjdk-17-jdk"
 }
 
 INSTALL_PATH=$(pwd)
@@ -141,19 +246,19 @@ CXX=/usr/bin/clang++
 
 JEMALLOC_FOLDER="jemalloc"
 JEMALLOC_URL="https://github.com/jemalloc/jemalloc/releases/download/${JEMALLOC_VERSION}/jemalloc-$JEMALLOC_VERSION.tar.bz2"
-JEMALLOC_BUILD_ARGS="CC=/usr/bin/clang EXTRA_CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' CXX=/usr/bin/clang++ EXTRA_CXXFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' ./configure && make -j${PARALLEL_TASKS} && make install"
+JEMALLOC_BUILD_ARGS="CC=/usr/bin/clang EXTRA_CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' CXX=/usr/bin/clang++ EXTRA_CXXFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -Ofast -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' ./configure && make -j${PARALLEL_TASKS} && make install"
 
 ZLIB_FOLDER="zlib"
 ZLIB_URL="https://github.com/cloudflare/zlib/archive/refs/tags/v${ZLIB_VERSION}.tar.gz"
-ZLIB_BUILD_ARGS="CC=/usr/bin/clang CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' CPP=/usr/bin/clang++ SFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' LD_LIBRARY_PATH=/usr/local/lib LDFLAGS='-L/usr/local/lib -l:libjemalloc.a' ./configure && make -j${PARALLEL_TASKS} && make install"
+ZLIB_BUILD_ARGS="CC=/usr/bin/clang CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' CPP=/usr/bin/clang++ SFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -Ofast -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' LD_LIBRARY_PATH=/usr/local/lib LDFLAGS='-L/usr/local/lib -l:libjemalloc.a' ./configure && make -j${PARALLEL_TASKS} && make install"
 
 LIBATOMIC_FOLDER="libatomic"
 LIBATOMIC_URL="https://github.com/ivmai/libatomic_ops/releases/download/v${LIBATOMIC_VERSION}/libatomic_ops-$LIBATOMIC_VERSION.tar.gz"
-LIBATOMIC_BUILD_ARGS="LT_SYS_LIBRARY_PATH=/usr/local/lib LD_LIBRARY_PATH=/usr/local/lib LDFLAGS='-L/usr/local/lib -l:libjemalloc.a' CC=/usr/bin/clang CCAS=/usr/bin/clang CCASFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -O3 -funroll-loops -fPIC' CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -O3 -funroll-loops -fPIC' CPPFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -O3 -funroll-loops -fPIC' ./configure && make -j${PARALLEL_TASKS} && make install"
+LIBATOMIC_BUILD_ARGS="LT_SYS_LIBRARY_PATH=/usr/local/lib LD_LIBRARY_PATH=/usr/local/lib LDFLAGS='-L/usr/local/lib -l:libjemalloc.a' CC=/usr/bin/clang CCAS=/usr/bin/clang CCASFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -Ofast -funroll-loops -fPIC' CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -Ofast -funroll-loops -fPIC' CPPFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -Ofast -funroll-loops -fPIC' ./configure && make -j${PARALLEL_TASKS} && make install"
 
 PCRE2_FOLDER="libpcre"
 PCRE2_URL="https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${PCRE2_VERSION}/pcre2-${PCRE2_VERSION}.tar.gz"
-PCRE2_BUILD_ARGS="LT_SYS_LIBRARY_PATH=/usr/local/lib LD_LIBRARY_PATH=/usr/local/lib LDFLAGS='-L/usr/local/lib -l:libjemalloc.a -l:libz.a' CC=/usr/bin/clang CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' CPPFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' ./configure --enable-pcre2grep-libz --enable-jit --enable-pcre2-16 --enable-pcre2-32 && make -j${PARALLEL_TASKS} && make install"
+PCRE2_BUILD_ARGS="LT_SYS_LIBRARY_PATH=/usr/local/lib LD_LIBRARY_PATH=/usr/local/lib LDFLAGS='-L/usr/local/lib -l:libjemalloc.a -l:libz.a' CC=/usr/bin/clang CFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -Ofast -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' CPPFLAGS='-mtune=${M_TUNE} -DADLER32_SIMD_NEON -DINFLATE_CHUNK_SIMD_NEON -DINFLATE_CHUNK_READ_64LE -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -funroll-loops -fPIC' ./configure --enable-pcre2grep-libz --enable-jit --enable-pcre2-16 --enable-pcre2-32 && make -j${PARALLEL_TASKS} && make install"
 
 GOLANG_FOLDER="golang"
 GOLANG_URL="https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz"
@@ -177,7 +282,7 @@ NGINX_SYSTEMD_SERVICE_PATH="/usr/lib/systemd/system/${NGINX_FOLDER}.service"
 
 REDIS_FOLDER="redis"
 REDIS_URL="https://github.com/redis/redis/archive/${REDIS_VERSION}.tar.gz"
-REDIS_BUILD_ARGS="make USE_SYSTEMD=yes MALLLOC=jemalloc BUILD_TLS=no REDIS_CFLAGS=\"-I/usr/local/include -O3 -funroll-loops --param=ssp-buffer-size=4 -flto=auto -mtune=${M_TUNE}\" REDIS_LDFLAGS=\"-L/usr/local/lib -l:libjemalloc.a \" -j${PARALLEL_TASKS} && make install"
+REDIS_BUILD_ARGS="make USE_SYSTEMD=yes MALLLOC=jemalloc BUILD_TLS=no REDIS_CFLAGS=\"-I/usr/local/include -Ofast -funroll-loops --param=ssp-buffer-size=4 -flto=auto -mtune=${M_TUNE}\" REDIS_LDFLAGS=\"-L/usr/local/lib -l:libjemalloc.a \" -j${PARALLEL_TASKS} && make install"
 REDIS_CONFIG_PATH="/etc/redis/${REDIS_FOLDER}.conf"
 REDIS_SYSTEMD_SERVICE_PATH="${SYSTEMD_SERVICES_PATH}/${REDIS_FOLDER}.service"
 
@@ -190,6 +295,9 @@ MARIADB_SOCKET_FOLDER="/var/run/mysqld"
 MARIADB_CONF_FILE="my.cnf"
 MARIADB_INSTALLATION_FOLDER="/usr/local/mysql"
 
+## End module configuration
+
+## Start module utils
 
 function getMariaDbSource()
 {
@@ -202,24 +310,27 @@ function getMariaDbSource()
 
   apt source ${MARIADB_FOLDER}-server
 
-  mkdir -p ${MARIADB_BUILD_FOLDER}
+  mkdir -p "${MARIADB_BUILD_FOLDER}"
   mv ${MARIADB_FOLDER}-*/* ${MARIADB_FOLDER}
 
   rm -rf ${MARIADB_FOLDER}*.*
 
-  cd ${MARIADB_BUILD_FOLDER} || exit
+  cd "${MARIADB_BUILD_FOLDER}" || exit
 }
 
-## End module configuration
+## End module utils
+
 deleteCache
 
+purgeManagerPackages
 installPackages
+
 kernelTuning
 
-buildModule $JEMALLOC_FOLDER $JEMALLOC_URL $JEMALLOC_BUILD_ARGS
-buildModule $ZLIB_FOLDER $ZLIB_URL $ZLIB_BUILD_ARGS
-buildModule $PCRE2_FOLDER $PCRE2_URL $PCRE2_BUILD_ARGS
-buildModule $OPENSSL_FOLDER $OPENSSL_URL $OPENSSL_BUILD_ARGS
+buildModule $JEMALLOC_FOLDER $JEMALLOC_URL "$JEMALLOC_BUILD_ARGS"
+buildModule $ZLIB_FOLDER $ZLIB_URL "$ZLIB_BUILD_ARGS"
+buildModule $PCRE2_FOLDER $PCRE2_URL "$PCRE2_BUILD_ARGS"
+buildModule $OPENSSL_FOLDER $OPENSSL_URL "$OPENSSL_BUILD_ARGS"
 
 ## Start NGINX installation
 
@@ -254,7 +365,7 @@ fi
 
 if [[ $USE_REDIS == 1 ]]; then
     buildModule $REDIS_FOLDER $REDIS_URL $REDIS_BUILD_ARGS
-    
+
     cp -rf "${CONF_PATH}/${REDIS_FOLDER}.conf" ${REDIS_CONFIG_PATH}
     cp -rf "${SERVICES_PATH}/${REDIS_FOLDER}.service" ${REDIS_SYSTEMD_SERVICE_PATH}
 
@@ -272,6 +383,7 @@ if [[ $USE_MARIADB == 1 ]]; then
 
   groupadd mysql
   useradd -g mysql mysql
+  usermod -aG mysql www-data
 
   cd "${MARIADB_INSTALLATION_FOLDER}" || exit
 
@@ -301,3 +413,5 @@ if [[ $USE_MARIADB == 1 ]]; then
   systemctl start "${MARIADB_FOLDER}.service"
 fi
 ## End MariaDB upgrade
+
+die

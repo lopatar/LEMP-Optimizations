@@ -1,13 +1,15 @@
 # Optimized LEMP stack build stack
 This script is intended to ease building optimized LEMP stack **and more** using the newest software and libraries.
 
-Versions of each stack part/library can be tuned in the script header.
-
 The script mostly consists of me experimenting with more advanced scripting concepts, please be kind :)
 
 **Architecture/CPU specific optimizations are tuned for Raspberry Pi 4B**
 
 **The script is written in zsh**
+
+# Configuration
+All configuration options are located in [config.sh](https://github.com/lopatar/LEMP-Optimizations/blob/master/build.sh)
+
 
 # Software installed
 - NGINX
