@@ -293,7 +293,7 @@ function aptWrap()
   if [[ -z $PACKAGE ]]; then
     apt-get --no-install-suggests --quiet -y "${ACTION}"
   else
-    apt-get --no-install-suggests --quiet -y "${ACTION} \'${PACKAGE}\'"
+    apt-get --no-install-suggests --quiet -y "${ACTION} '${PACKAGE}'"
   fi
 }
 
