@@ -209,10 +209,10 @@ function purgePackage()
 {
   PACKAGE_NAME=${1}
 
-  printLine "Stopping service ${PACKAGE_NAME}" "Cleanup"
+  printLine "Stopping services matching regex ${PACKAGE_NAME}\*.service" "Cleanup"
   service "$PACKAGE_NAME"\* stop
 
-  printLine "Removing ${PACKAGE_NAME}" "Cleanup"
+  printLine "Removing packages matching regex ^${PACKAGE_NAME}" "Cleanup"
 
   aptWrap "remove" "^${PACKAGE_NAME}"
 }
@@ -290,10 +290,16 @@ function aptWrap()
   ACTION=${1}
   PACKAGE=${2}
 
+  APT_ARGS="-qq"
+
+  if [[ $ACTION == "install" || $ACTION == "upgrade" || $ACTION == "remove" ]]; then
+    APT_ARGS="$APT_ARGS --show-progress"
+  fi
+
   if [[ -z $PACKAGE ]]; then
-    apt-get -qq "${ACTION}"
+    apt-get "${APT_ARGS} ${ACTION}"
   else
-    apt-get -qq "${ACTION}" "${PACKAGE}"
+    apt-get "${APT_ARGS} ${ACTION} ${PACKAGE}"
   fi
 }
 
