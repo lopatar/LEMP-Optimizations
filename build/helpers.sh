@@ -290,16 +290,10 @@ function aptWrap()
   ACTION=${1}
   PACKAGE=${2}
 
-  APT_FLAGS="-qq --no-show-upgraded --no-install-recommends"
-
-  if [[ $ACTION == "upgrade" || $ACTION == "install" || $ACTION == "remove" ]]; then
-    APT_FLAGS="$APT_FLAGS --show-progress"
-  fi
-
   if [[ -z $PACKAGE ]]; then
-    apt-get $APT_FLAGS $ACTION
+    apt-get -qq "${ACTION}"
   else
-    apt-get $APT_FLAGS $ACTION $PACKAGE
+    apt-get -qq "${ACTION}" "${PACKAGE}"
   fi
 }
 
