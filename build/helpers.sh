@@ -1,6 +1,5 @@
 GLOBAL_UPPERCASE=""
 SEPARATOR_STRING="------------------------------------------"
-APT_FLAGS="-qq --no-install-recommends"
 
 function prepareLogging()
 {
@@ -130,10 +129,10 @@ function getMariaDbSource()
   printLine "Updating & upgrading package repositories" "Build-Installer"
   updateUpgrade
   printLine "Installing required packages to build MariaDB" "Build-Installer"
-  aptWrap "build-dep ${MARIADB_FOLDER}-server"
+  aptWrap "build-dep" "${MARIADB_FOLDER}-server"
 
   printLine "Dowloading MariaDB source code" "MariaDB"
-  aptWrap "source ${MARIADB_FOLDER}-server"
+  aptWrap "source" "${MARIADB_FOLDER}-server"
 
   printLine "Creating folder ${MARIADB_BUILD_FOLDER}" "MariaDB"
   mkdir -p "${MARIADB_BUILD_FOLDER}"
@@ -215,7 +214,7 @@ function purgePackage()
 
   printLine "Removing ${PACKAGE_NAME}" "Cleanup"
 
-  apt-get "${APT_FLAGS}" remove \'^$PACKAGE_NAME\'
+  aptWrap "remove" "^${PACKAGE_NAME}"
 }
 
 function installPackage()
@@ -278,12 +277,12 @@ function checkRoot()
 
 function systemctlWrap()
 {
-  systemctl -q -f "${1}"
+  systemctl -q -f ${1}
 }
 
 function rmWrap()
 {
-  rm -rfd --interactive=never "${1}"
+  rm -rfd --interactive=never ${1}
 }
 
 function aptWrap()
@@ -291,10 +290,16 @@ function aptWrap()
   ACTION=${1}
   PACKAGE=${2}
 
+  APT_FLAGS="-qq --no-show-upgraded --no-install-recommends"
+
+  if [[ $ACTION == "upgrade" || $ACTION == "install" || $ACTION == "remove" ]]; then
+    APT_FLAGS="$APT_FLAGS --show-progress"
+  fi
+
   if [[ -z $PACKAGE ]]; then
-    apt-get "${ACTION} ${APT_FLAGS}"
+    apt-get $APT_FLAGS $ACTION
   else
-    apt-get "${ACTION} ${APT_FLAGS} ${PACKAGE}"
+    apt-get $APT_FLAGS $ACTION $PACKAGE
   fi
 }
 

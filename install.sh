@@ -1,4 +1,4 @@
-#!/bin/zsh
++#!/bin/zsh
 
 REPO_FOLDER=$(pwd)
 
@@ -35,7 +35,6 @@ checkRoot
 printLine "Loading configuration" "Init"
 source ./config.sh
 printConfiguration
-
 purgeManagerPackages
 installPackages
 kernelTuning
