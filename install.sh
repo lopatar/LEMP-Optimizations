@@ -3,16 +3,19 @@
 ## User configuration
 
 LOG_ENABLED=1
-LOG_FILE="logs/lemp-install.log"
+LOG_FOLDER="logs"
+LOG_FILENAME="lemp-build.log"
 LOG_TIMEZONE="Europe/Prague"
 
 ## End user configuration
+LOG_FILE="${LOG_FOLDER}/${LOG_FILENAME}"
 
 source build/helpers.sh
 
-removeOldLogFile
-
 printHeader
+
+prepareLogging
+removeOldLogFile
 
 checkRoot
 

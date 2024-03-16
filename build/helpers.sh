@@ -1,6 +1,12 @@
 GLOBAL_UPPERCASE=""
 SEPARATOR_STRING="------------------------------------------"
 
+function prepareLogging()
+{
+  mkdirWrap "${LOG_FOLDER}"
+  printLine "Prepared logging system" "Logging"
+}
+
 function logToFile()
 {
   MESSAGE="[LOG] ${1}"
@@ -254,13 +260,13 @@ function purgeManagerPackages()
 
 function printHeader()
 {
-  printLine $SEPARATOR_STRING
+  echo $SEPARATOR_STRING
 
-  printLine "This script was made by Jiří Lopatář"
-  printLine "https://github.com/lopatar/LEMP-Optimizations"
-  printLine "https://linkedin.com/in/lopatar-jiri"
+  echo "This script was made by Jiří Lopatář"
+  echo "https://github.com/lopatar/LEMP-Optimizations"
+  echo "https://linkedin.com/in/lopatar-jiri"
 
-  printLine $SEPARATOR_STRING
+  echo $SEPARATOR_STRING
 }
 
 function checkRoot()
@@ -292,6 +298,11 @@ function updateUpgrade()
 {
   aptWrap "update"
   aptWrap "upgrade"
+}
+
+function mkdirWrap()
+{
+  mkdir -p ${1}
 }
 
 function die()
