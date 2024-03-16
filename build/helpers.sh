@@ -207,14 +207,14 @@ function printLine()
 
 function purgePackage()
 {
-  local PACKAGE_NAME=${1}
+  PACKAGE_NAME=${1}
 
   printLine "Stopping service ${PACKAGE_NAME}" "Cleanup"
-  service "${PACKAGE_NAME}"* stop
+  service "${SERVICE_NAME}"* stop
 
   printLine "Removing ${PACKAGE_NAME}" "Cleanup"
 
-  aptWrap remove "${PACKAGE_NAME}"*
+  aptWrap "remove ${PACKAGE_NAME}" 1
 }
 
 function installPackage()
@@ -287,7 +287,15 @@ function rmWrap()
 
 function aptWrap()
 {
-  eval "apt --quiet --no-install-suggests -y '${COMMAND}'"
+  local COMMAND=${1}
+  local WILDCARD=${2}
+  local CMD_BASE="apt --quiet -y --no-install-suggests ${COMMAND}"
+
+  if [[ $WILDCARD == 1 ]]; then
+    CMD_BASE="${CMD_BASE}"*
+  fi
+
+  eval ${CMD_BASE}
 }
 
 function updateUpgrade()
