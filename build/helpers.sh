@@ -1,6 +1,6 @@
 GLOBAL_UPPERCASE=""
 SEPARATOR_STRING="------------------------------------------"
-APT_FLAGS="--quiet -y"
+APT_FLAGS="-y -qq -o=Dpkg::Use-Pty=0"
 
 function prepareLogging()
 {
