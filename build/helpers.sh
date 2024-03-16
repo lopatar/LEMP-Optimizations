@@ -288,7 +288,7 @@ function rmWrap()
 
 function aptWrap()
 {
-  apt-get "${APT_FLAGS} ${1}"
+  apt-get "${1} -qq -no-install-recommends"
 }
 
 function updateUpgrade()
