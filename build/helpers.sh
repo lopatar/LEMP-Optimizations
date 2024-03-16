@@ -1,10 +1,25 @@
 GLOBAL_UPPERCASE=""
+CURRENT_TIME=""
 SEPARATOR_STRING="------------------------------------------"
+
+function getCurrentTime()
+{
+  CURRENT_TIME=$(TZ="${LOG_TIMEZONE}" date)
+  convertToUppercase "$CURRENT_TIME"
+  CURRENT_TIME=${GLOBAL_UPPERCASE}
+}
 
 function prepareLogging()
 {
   mkdirWrap "${LOG_FOLDER}"
   printLine "Prepared logging system" "Logging"
+}
+
+function logStdOut()
+{
+  local outData
+  read -r outData
+  echo "$outData" > "${LOG_STDOUT_FILE}"
 }
 
 function logToFile()
@@ -17,6 +32,12 @@ function removeOldLogFile()
 {
   printLine "Removing old logfile ${LOG_FILE}" "Cleanup"
   rmWrap "$LOG_FILE"
+
+  printLine "Removing old logfile ${LOG_STDERR_FILE}" "Cleanup"
+  rmWrap "$LOG_STDERR_FILE"
+
+  printLine "Removing old logfile ${LOG_STDOUT_FILE}" "Cleanup"
+  rmWrap "$LOG_STDOUT_FILE"
 }
 
 function buildModule() {
@@ -188,13 +209,10 @@ function printLine()
   convertToUppercase "${2}"
   local SOFTWARE=${GLOBAL_UPPERCASE}
 
-  local CURRENT_TIME
-  CURRENT_TIME=$(TZ="${LOG_TIMEZONE}" date)
-  convertToUppercase "$CURRENT_TIME"
-  CURRENT_TIME=${GLOBAL_UPPERCASE}
+  convertToUppercase "$MESSAGE"
+  MESSAGE=${GLOBAL_UPPERCASE}
 
-  convertToUppercase "$CURRENT_TIME"
-  CURRENT_TIME=${GLOBAL_UPPERCASE}
+  getCurrentTime
 
   MESSAGE="[${SOFTWARE}] [${CURRENT_TIME}] - ${MESSAGE}"
 
