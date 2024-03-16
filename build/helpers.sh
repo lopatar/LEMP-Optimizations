@@ -1,6 +1,6 @@
 GLOBAL_UPPERCASE=""
 SEPARATOR_STRING="------------------------------------------"
-APT_FLAGS="-y -qq"
+APT_FLAGS="-qq"
 
 function prepareLogging()
 {

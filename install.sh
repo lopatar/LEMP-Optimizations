@@ -58,9 +58,8 @@ SYSTEMD_SERVICES_PATH="/usr/lib/systemd/system"
 printLine "OS systemd services path ${SYSTEMD_SERVICES_PATH}" "Systemd"
 
 cd build || die
+source packageConfig.sh
 deleteCache
-
-source build/packageConfig.sh
 
 chmod +x build.sh
 source build.sh > "${LOG_STDOUT_FILE}" 2> "${LOG_STDERR_FILE}"
