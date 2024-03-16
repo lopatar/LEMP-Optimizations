@@ -15,12 +15,6 @@ function prepareLogging()
   printLine "Prepared logging system" "Logging"
 }
 
-function logStdOut()
-{
-  read -r -s STDOUT_DATA
-  echo "$STDOUT_DATA" | tee -a "${LOG_STDOUT_FILE}"
-}
-
 function logStdErr()
 {
     read -r -s STDERR_DATA
@@ -40,9 +34,6 @@ function removeOldLogFile()
 
   printLine "Removing old logfile ${LOG_STDERR_FILE}" "Cleanup"
   rmWrap "$LOG_STDERR_FILE"
-
-  printLine "Removing old logfile ${LOG_STDOUT_FILE}" "Cleanup"
-  rmWrap "$LOG_STDOUT_FILE"
 }
 
 function buildModule() {
