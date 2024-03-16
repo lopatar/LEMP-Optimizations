@@ -9,7 +9,7 @@ function prepareLogging()
 
 function logToFile()
 {
-  MESSAGE="[LOG] ${1}"
+  local MESSAGE="[LOG] ${1}"
   echo "${MESSAGE}" | tee -a "${LOG_FILE}"
 }
 
@@ -207,9 +207,9 @@ function printLine()
 
 function purgePackage()
 {
-  PACKAGE_NAME=${1}
+  local PACKAGE_NAME=${1}
 
-  printLine "Stopping services matching regex ${PACKAGE_NAME}\*.service" "Cleanup"
+  printLine "Stopping services matching regex ${PACKAGE_NAME}*.service" "Cleanup"
   service "$PACKAGE_NAME"\* stop
 
   printLine "Removing packages matching regex ^${PACKAGE_NAME}" "Cleanup"
@@ -287,14 +287,11 @@ function rmWrap()
 
 function aptWrap()
 {
-  ACTION=${1}
-  PACKAGE=${2}
+  local ACTION=${1}
+  local PACKAGE=${2}
 
-  APT_ARGS="-qq"
-
-  if [[ $ACTION == "install" || $ACTION == "upgrade" || $ACTION == "remove" ]]; then
-    APT_ARGS="$APT_ARGS --show-progress"
-  fi
+  ## For later expansion until i find a way to use the proper flags.
+  local APT_ARGS="-qq"
 
   if [[ -z $PACKAGE ]]; then
     apt-get "${APT_ARGS} ${ACTION}"

@@ -39,8 +39,8 @@ purgeManagerPackages
 installPackages
 kernelTuning
 
-CC=$C_COMPILER
-CXX=$CXX_COMPILER
+export CC=$C_COMPILER
+export CXX=$CXX_COMPILER
 
 INSTALL_PATH="${REPO_FOLDER}/build"
 CONF_PATH="${INSTALL_PATH}/conf"
