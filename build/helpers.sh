@@ -291,13 +291,14 @@ function aptWrap()
   local PACKAGE=${2}
 
   ## For later expansion until i find a way to use the proper flags.
-  local APT_ARGS="-qq"
+  local APT_ARGS="-qq --no-show-upgraded --no-install-recommends"
 
   if [[ -z $PACKAGE ]]; then
-    apt-get "${APT_ARGS} ${ACTION}"
+    apt-get $APT_ARGS $ACTION
   else
-    apt-get "${APT_ARGS} ${ACTION} ${PACKAGE}"
+    apt-get $APT_ARGS $ACTION $PACKAGE
   fi
+
 }
 
 function updateUpgrade()
