@@ -1,5 +1,6 @@
 GLOBAL_UPPERCASE=""
 SEPARATOR_STRING="------------------------------------------"
+APT_FLAGS="--no-install-suggests --quiet -y"
 
 function prepareLogging()
 {
@@ -129,10 +130,10 @@ function getMariaDbSource()
   printLine "Updating & upgrading package repositories" "Build-Installer"
   updateUpgrade
   printLine "Installing required packages to build MariaDB" "Build-Installer"
-  aptWrap "build-dep" "${MARIADB_FOLDER}-server"
+  aptWrap "build-dep ${MARIADB_FOLDER}-server"
 
   printLine "Dowloading MariaDB source code" "MariaDB"
-  aptWrap "source" "${MARIADB_FOLDER}-server"
+  aptWrap "source ${MARIADB_FOLDER}-server"
 
   printLine "Creating folder ${MARIADB_BUILD_FOLDER}" "MariaDB"
   mkdir -p "${MARIADB_BUILD_FOLDER}"
@@ -214,7 +215,7 @@ function purgePackage()
 
   printLine "Removing ${PACKAGE_NAME}" "Cleanup"
 
-  aptWrap "remove" ^${PACKAGE_NAME}
+  apt-get "${APT_FLAGS}" remove \'^${PACKAGE_NAME}\'
 }
 
 function installPackage()
@@ -222,7 +223,7 @@ function installPackage()
   local PACKAGE_STRING=${1}
 
   printLine "Installing ${PACKAGE_STRING}" "Build-Installer"
-  aptWrap "install" "${PACKAGE_STRING}"
+  aptWrap "install ${PACKAGE_STRING}"
 }
 
 function installPackages()
@@ -287,14 +288,7 @@ function rmWrap()
 
 function aptWrap()
 {
-  ACTION=${1}
-  PACKAGE=${2}
-
-  if [[ -z $PACKAGE ]]; then
-    apt-get --no-install-suggests --quiet -y "${ACTION}"
-  else
-    apt-get "${ACTION} '${PACKAGE}'"
-  fi
+  apt-get "${APT_FLAGS} ${1}"
 }
 
 function updateUpgrade()
