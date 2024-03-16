@@ -1,5 +1,7 @@
 #!/bin/zsh
 
+unsetopt MULTIOS
+
 REPO_FOLDER=$(pwd)
 
 # shellcheck disable=SC2034
@@ -53,4 +55,4 @@ deleteCache
 
 chmod +x build.sh
 source build.sh
-} 2> /dev/null | logStdErr
+} 2>&1 | logStdErr
