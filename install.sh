@@ -1,12 +1,15 @@
 #!/bin/zsh
 
+REPO_FOLDER=$(pwd)
+
 ## User configuration
 
 # shellcheck disable=SC2034
 LOG_ENABLED=1
+# shellcheck disable=SC2034
 LOG_TIMEZONE="Europe/Prague"
 
-LOG_FOLDER="logs"
+LOG_FOLDER="${REPO_FOLDER}/logs"
 LOG_STDERR_FILENAME="script-stderr.log"
 LOG_STDOUT_FILENAME="script-stdout.log"
 LOG_FILENAME="script-logger.log"
@@ -20,6 +23,7 @@ LOG_STDERR_FILE="${LOG_FOLDER}/${LOG_STDERR_FILENAME}"
 LOG_STDOUT_FILE="${LOG_FOLDER}/${LOG_STDOUT_FILENAME}"
 
 source build/helpers.sh
+printLine "!!!!!!!!!!! SCRIPT STARTED !!!!!!!!!!!"
 
 printHeader
 
@@ -39,7 +43,7 @@ kernelTuning
 CC=$C_COMPILER
 CXX=$CXX_COMPILER
 
-INSTALL_PATH="$(pwd)/build"
+INSTALL_PATH="${REPO_FOLDER}/build"
 CONF_PATH="${INSTALL_PATH}/conf"
 SERVICES_PATH="${INSTALL_PATH}/services"
 
@@ -53,10 +57,10 @@ printLine "CPU thread count: ${PARALLEL_TASKS}" "Performance"
 SYSTEMD_SERVICES_PATH="/usr/lib/systemd/system"
 printLine "OS systemd services path ${SYSTEMD_SERVICES_PATH}" "Systemd"
 
-source build/packageConfig.sh
-
 cd build || die
 deleteCache
 
-chmod +x build/build.sh
-source build.sh > ${LOG_STDOUT_FILENAME} 2> ${LOG_STDERR_FILENAME}
+source build/packageConfig.sh
+
+chmod +x build.sh
+source build.sh > "${LOG_STDOUT_FILE}" 2> "${LOG_STDERR_FILE}"

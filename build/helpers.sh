@@ -1,6 +1,6 @@
 GLOBAL_UPPERCASE=""
 SEPARATOR_STRING="------------------------------------------"
-APT_FLAGS="--no-install-suggests --quiet -y"
+APT_FLAGS="--quiet -y"
 
 function prepareLogging()
 {
