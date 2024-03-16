@@ -277,12 +277,12 @@ function checkRoot()
 
 function systemctlWrap()
 {
-  systemctl -q -f ${1}
+  systemctl -q -f "${1}"
 }
 
 function rmWrap()
 {
-  rm -rfd --interactive=never ${1}
+  rm -rfd --interactive=never "${1}"
 }
 
 function aptWrap()
