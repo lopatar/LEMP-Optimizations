@@ -22,15 +22,19 @@ OPENSSL_VERSION="3.2.1"
 
 M_TUNE="cortex-a72"
 
+C_COMPILER="/usr/bin/clang"
+CXX_COMPILER="/usr/bin/clang++"
+
 function printConfVar()
 {
   # shellcheck disable=SC2028
-  echo "$1 => \"$(eval echo \$"$1")\""
+  CONF_VAR="$1 => \"$(eval echo \$"$1")\""
+  printLine "${CONF_VAR}" "Config"
 }
 
 function printConfiguration()
 {
-  printLine "Printing configuration"
+  printLine "Printing configuration" "Config"
 
   printConfVar USE_OPENSSL
   printConfVar USE_NGINX
@@ -53,6 +57,8 @@ function printConfiguration()
   printConfVar OPENSSL_VERSION
 
   printConfVar M_TUNE
+  printConfVar C_COMPILER
+  printConfVar CXX_COMPILER
 }
 
 
