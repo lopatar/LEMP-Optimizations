@@ -214,7 +214,7 @@ function purgePackage()
 
   printLine "Removing ${PACKAGE_NAME}" "Cleanup"
 
-  aptWrap "remove" "^${PACKAGE_NAME}"
+  aptWrap "remove" ^${PACKAGE_NAME}
 }
 
 function installPackage()
@@ -293,7 +293,7 @@ function aptWrap()
   if [[ -z $PACKAGE ]]; then
     apt-get --no-install-suggests --quiet -y "${ACTION}"
   else
-    apt-get --no-install-suggests --quiet -y "${ACTION} '${PACKAGE}'"
+    apt-get "${ACTION} '${PACKAGE}'"
   fi
 }
 
