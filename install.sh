@@ -5,6 +5,7 @@
 LOG_ENABLED=1
 LOG_FOLDER="logs"
 LOG_FILENAME="lemp-build.log"
+LOG_ERRFILENAME="+"
 LOG_TIMEZONE="Europe/Prague"
 
 ## End user configuration

@@ -207,7 +207,7 @@ function printLine()
 
 function purgePackage()
 {
-  local PACKAGE_NAME="${1}"
+  local PACKAGE_NAME=${1}
 
   printLine "Stopping service ${PACKAGE_NAME}" "Cleanup"
   service "${PACKAGE_NAME}"* stop
@@ -239,10 +239,6 @@ function installPackages()
 function purgeManagerPackages()
 {
   printLine "Removing package manager installed packages that are going to be replaced" "Cleanup"
-
-  if [[ $USE_OPENSSL == 1 ]]; then
-    purgePackage "openssl"
-  fi
 
   if [[ $USE_NGINX == 1 ]]; then
       purgePackage "nginx"
@@ -291,7 +287,7 @@ function rmWrap()
 
 function aptWrap()
 {
-  eval "apt --quiet --no-install-suggests -y ${1}"
+  eval "apt --quiet --no-install-suggests -y '${COMMAND}'"
 }
 
 function updateUpgrade()
@@ -302,7 +298,7 @@ function updateUpgrade()
 
 function mkdirWrap()
 {
-  mkdir -p ${1}
+  mkdir -p "${1}"
 }
 
 function die()
