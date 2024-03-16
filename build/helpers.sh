@@ -215,7 +215,7 @@ function purgePackage()
 
   printLine "Removing ${PACKAGE_NAME}" "Cleanup"
 
-  apt-get "${APT_FLAGS}" remove \'^${PACKAGE_NAME}\'
+  apt-get "${APT_FLAGS}" remove \'^${PACKAGE_NAME}\'"
 }
 
 function installPackage()
