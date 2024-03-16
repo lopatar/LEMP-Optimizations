@@ -17,9 +17,14 @@ function prepareLogging()
 
 function logStdOut()
 {
-  local outData
-  read -r outData
-  echo "$outData" > "${LOG_STDOUT_FILE}"
+  read -r -s STDOUT_DATA
+  echo "$STDOUT_DATA" | tee -a "${LOG_STDOUT_FILE}"
+}
+
+function logStdErr()
+{
+    read -r -s STDERR_DATA
+    echo "$STDERR_DATA" | tee -a "${LOG_STDERR_FILE}"
 }
 
 function logToFile()

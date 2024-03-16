@@ -62,4 +62,4 @@ deleteCache
 
 chmod +x build.sh
 source build.sh > "${LOG_STDOUT_FILE}" 2> "${LOG_STDERR_FILE}"
-} > logStdOut
+} > logStdOut 2> logStdErr
