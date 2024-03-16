@@ -2,14 +2,22 @@
 
 ## User configuration
 
+# shellcheck disable=SC2034
 LOG_ENABLED=1
-LOG_FOLDER="logs"
-LOG_FILENAME="lemp-build.log"
-LOG_ERRFILENAME="+"
 LOG_TIMEZONE="Europe/Prague"
 
+LOG_FOLDER="logs"
+LOG_STDERR_FILENAME="script-stderr.log"
+LOG_STDOUT_FILENAME="script-stdout.log"
+LOG_FILENAME="script-logger.log"
+
 ## End user configuration
+# shellcheck disable=SC2034
 LOG_FILE="${LOG_FOLDER}/${LOG_FILENAME}"
+# shellcheck disable=SC2034
+LOG_STDERR_FILE="${LOG_FOLDER}/${LOG_STDERR_FILENAME}"
+# shellcheck disable=SC2034
+LOG_STDOUT_FILE="${LOG_FOLDER}/${LOG_STDOUT_FILENAME}"
 
 source build/helpers.sh
 
@@ -51,4 +59,4 @@ cd build || die
 deleteCache
 
 chmod +x build/build.sh
-source build.sh
+source build.sh > ${LOG_STDOUT_FILENAME} 2> ${LOG_STDERR_FILENAME}

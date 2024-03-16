@@ -129,10 +129,10 @@ function getMariaDbSource()
   printLine "Updating & upgrading package repositories" "Build-Installer"
   updateUpgrade
   printLine "Installing required packages to build MariaDB" "Build-Installer"
-  aptWrap "build-dep ${MARIADB_FOLDER}-server"
+  aptWrap "build-dep" "${MARIADB_FOLDER}-server"
 
   printLine "Dowloading MariaDB source code" "MariaDB"
-  aptWrap "source ${MARIADB_FOLDER}-server"
+  aptWrap "source" "${MARIADB_FOLDER}-server"
 
   printLine "Creating folder ${MARIADB_BUILD_FOLDER}" "MariaDB"
   mkdir -p "${MARIADB_BUILD_FOLDER}"
@@ -210,11 +210,11 @@ function purgePackage()
   PACKAGE_NAME=${1}
 
   printLine "Stopping service ${PACKAGE_NAME}" "Cleanup"
-  service "${SERVICE_NAME}"* stop
+  service "$PACKAGE_NAME"\* stop
 
   printLine "Removing ${PACKAGE_NAME}" "Cleanup"
 
-  aptWrap "remove ${PACKAGE_NAME}" 1
+  aptWrap "remove" "^${PACKAGE_NAME}"
 }
 
 function installPackage()
@@ -222,7 +222,7 @@ function installPackage()
   local PACKAGE_STRING=${1}
 
   printLine "Installing ${PACKAGE_STRING}" "Build-Installer"
-  aptWrap "install ${PACKAGE_STRING}"
+  aptWrap "install" "${PACKAGE_STRING}"
 }
 
 function installPackages()
@@ -287,15 +287,14 @@ function rmWrap()
 
 function aptWrap()
 {
-  local COMMAND=${1}
-  local WILDCARD=${2}
-  local CMD_BASE="apt --quiet -y --no-install-suggests ${COMMAND}"
+  ACTION=${1}
+  PACKAGE=${2}
 
-  if [[ $WILDCARD == 1 ]]; then
-    CMD_BASE="${CMD_BASE}"*
+  if [[ -z $PACKAGE ]]; then
+    apt-get --no-install-suggests --quiet -y "${ACTION}"
+  else
+    apt-get --no-install-suggests --quiet -y "${ACTION} \'${PACKAGE}\'"
   fi
-
-  eval ${CMD_BASE}
 }
 
 function updateUpgrade()
