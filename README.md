@@ -16,7 +16,7 @@ chmod +x install.sh
 ./install.sh
 ```
 ## Configuration
-All configuration options are located in [config.sh](https://github.com/lopatar/LEMP-Optimizations/blob/master/build.sh)
+All configuration options are located in [config.sh](https://github.com/lopatar/LEMP-Optimizations/blob/master/config.sh)
 
 # Software installed
 - NGINX
