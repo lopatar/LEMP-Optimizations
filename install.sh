@@ -52,5 +52,5 @@ source packageConfig.sh
 deleteCache
 
 chmod +x build.sh
-source build.sh 2> logStdErr
-} 2> logStdErr
+source build.sh
+} 2> /dev/null | logStdErr

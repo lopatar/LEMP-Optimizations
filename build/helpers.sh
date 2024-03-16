@@ -18,7 +18,8 @@ function prepareLogging()
 
 function logStdErr()
 {
-    read -r -s STDERR_DATA
+    local STDERR_DATA
+    read -r STDERR_DATA
     logToFile "ERROR" "OptimizedLEMP" "${LOG_STDERR_FILE}" "${STDERR_DATA}"
 }
 
