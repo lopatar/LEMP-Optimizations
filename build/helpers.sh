@@ -1,6 +1,6 @@
 GLOBAL_UPPERCASE=""
 SEPARATOR_STRING="------------------------------------------"
-APT_FLAGS="-qq"
+APT_FLAGS="-qq --no-install-recommends"
 
 function prepareLogging()
 {
@@ -215,7 +215,7 @@ function purgePackage()
 
   printLine "Removing ${PACKAGE_NAME}" "Cleanup"
 
-  apt-get "${APT_FLAGS} remove \'^${PACKAGE_NAME}\'"
+  apt-get "${APT_FLAGS}" remove \'^$PACKAGE_NAME\'
 }
 
 function installPackage()
@@ -223,7 +223,7 @@ function installPackage()
   local PACKAGE_STRING=${1}
 
   printLine "Installing ${PACKAGE_STRING}" "Build-Installer"
-  aptWrap "install ${PACKAGE_STRING}"
+  aptWrap "install" "${PACKAGE_STRING}"
 }
 
 function installPackages()
@@ -278,7 +278,7 @@ function checkRoot()
 
 function systemctlWrap()
 {
-  eval "systemctl -q -f ${1}"
+  systemctl -q -f "${1}"
 }
 
 function rmWrap()
@@ -288,7 +288,14 @@ function rmWrap()
 
 function aptWrap()
 {
-  apt-get "${1} -qq --no-install-recommends"
+  ACTION=${1}
+  PACKAGE=${2}
+
+  if [[ -z $PACKAGE ]]; then
+    apt-get "${ACTION} ${APT_FLAGS}"
+  else
+    apt-get "${ACTION} ${APT_FLAGS} ${PACKAGE}"
+  fi
 }
 
 function updateUpgrade()
