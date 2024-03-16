@@ -1,5 +1,6 @@
 GLOBAL_UPPERCASE=""
 CURRENT_TIME=""
+
 SEPARATOR_STRING="------------------------------------------"
 
 function getCurrentTime()
@@ -18,7 +19,13 @@ function prepareLogging()
 function logStdErr()
 {
     read -r -s STDERR_DATA
-    echo "$STDERR_DATA" | tee -a "${LOG_STDERR_FILE}"
+
+    convertToUppercase "$STDERR_DATA"
+    getCurrentTime
+
+    local MESSAGE="[ERROR] [${CURRENT_TIME}] ${GLOBAL_UPPERCASE}"
+
+    echo "$MESSAGE" >> "${LOG_STDERR_FILE}"
 }
 
 function logToFile()
