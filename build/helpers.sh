@@ -19,19 +19,29 @@ function prepareLogging()
 function logStdErr()
 {
     read -r -s STDERR_DATA
-
-    convertToUppercase "$STDERR_DATA"
-    getCurrentTime
-
-    local MESSAGE="[ERROR] [${CURRENT_TIME}] ${GLOBAL_UPPERCASE}"
-
-    echo "$MESSAGE" >> "${LOG_STDERR_FILE}"
+    logToFile "ERROR" "OptimizedLEMP" "${LOG_STDERR_FILE}" "${STDERR_DATA}"
 }
 
 function logToFile()
 {
-  local MESSAGE="[LOG] ${1}"
-  echo "${MESSAGE}" | tee -a "${LOG_FILE}"
+  local LOG_TYPE=${1}
+  local LOG_MODULE=${2}
+  local LOG_OUTPUT_FILE=${3}
+  local LOG_TEXT=${4}
+
+  convertToUppercase "$LOG_TYPE"
+  LOG_TYPE=$GLOBAL_UPPERCASE
+
+  convertToUppercase "$LOG_MODULE"
+  LOG_MODULE=$GLOBAL_UPPERCASE
+
+  convertToUppercase "$LOG_TEXT"
+  LOG_TEXT=$GLOBAL_UPPERCASE
+
+  getCurrentTime
+
+  local MESSAGE="[${LOG_TYPE}] [${LOG_MODULE}] [${CURRENT_TIME}] - ${LOG_TEXT}"
+  echo "${MESSAGE}" | tee -a "${LOG_OUTPUT_FILE}"
 }
 
 function removeOldLogFile()
@@ -208,22 +218,9 @@ function deleteCache()
 function printLine()
 {
   local MESSAGE=${1}
+  local SOFTWARE=${2}
 
-  convertToUppercase "${2}"
-  local SOFTWARE=${GLOBAL_UPPERCASE}
-
-  convertToUppercase "$MESSAGE"
-  MESSAGE=${GLOBAL_UPPERCASE}
-
-  getCurrentTime
-
-  MESSAGE="[${SOFTWARE}] [${CURRENT_TIME}] - ${MESSAGE}"
-
-  if [[ $LOG_ENABLED == 1 ]]; then
-    logToFile "${MESSAGE}"
-  else
-    echo "${MESSAGE}"
-  fi
+  logToFile "LOG" "${SOFTWARE}" "${LOG_FILE}" "${MESSAGE}"
 }
 
 function purgePackage()
