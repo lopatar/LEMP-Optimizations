@@ -45,15 +45,6 @@ function logToFile()
   echo "${MESSAGE}" | tee -a "${LOG_OUTPUT_FILE}"
 }
 
-function removeOldLogFile()
-{
-  printLine "Removing old logfile ${LOG_FILE}" "Cleanup"
-  rmWrap "$LOG_FILE"
-
-  printLine "Removing old logfile ${LOG_STDERR_FILE}" "Cleanup"
-  rmWrap "$LOG_STDERR_FILE"
-}
-
 function buildModule() {
     local FUNC_FOLDER=${1}
     local FUNC_URL=${2}
