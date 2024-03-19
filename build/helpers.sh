@@ -3,6 +3,11 @@ CURRENT_TIME=""
 
 SEPARATOR_STRING="------------------------------------------"
 
+function removeOldLogFile
+{
+  rmWrap "${LOG_FILE}"
+}
+
 function getCurrentTime()
 {
   CURRENT_TIME=$(TZ="${LOG_TIMEZONE}" date)
