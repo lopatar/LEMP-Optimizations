@@ -56,6 +56,11 @@ if [[ $USE_REDIS == 1 ]]; then
     printLine "Installing optimized systemd service to ${REDIS_SYSTEMD_SERVICE_PATH}/${REDIS_FOLDER}.service" "Systemd"
     cp -rf "${SERVICES_PATH}/${REDIS_FOLDER}.service" ${REDIS_SYSTEMD_SERVICE_PATH}
 
+    printLine "Creating Redis group" "Security"
+    groupadd redis
+    printLine "Creating Redis user" "Security"
+    useradd -g redis redis
+
     printLine "Granting www-data the redis group" "Security"
     usermod -aG redis www-data
 
