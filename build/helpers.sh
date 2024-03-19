@@ -3,6 +3,22 @@ CURRENT_TIME=""
 
 SEPARATOR_STRING="------------------------------------------"
 
+function addPhpRepository()
+{
+  aptWrap "install" "lsb-release"
+
+  printLine "Downloading deb.sury.org keyring" "APT-Security"
+  curl -sSLo /tmp/debsuryorg-archive-keyring.deb https://packages.sury.org/debsuryorg-archive-keyring.deb
+
+  printLine "Installing deb.sury.org keyring" "APT-Security"
+  dpkg -i /tmp/debsuryorg-archive-keyring.deb
+
+  printLine "Adding PHP repository: packages.sury.org/php/" "PHP"
+  sh -c 'echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'
+
+  aptWrap "update"
+}
+
 function removeOldLogFile
 {
   rmWrap "${LOG_FILE}"

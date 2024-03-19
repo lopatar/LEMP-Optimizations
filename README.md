@@ -31,7 +31,7 @@ All configuration options are located in [config.sh](https://github.com/lopatar/
   - Newer release than default package
   - Architecture specific optimizations
   - Optimized server configuration
-- PHP-FPM **TODO**
+- PHP-FPM (**Installed from [deb.sury.org](https://deb.sury.org)**)
 
 # Other optimizations
 - OpenSSL/[BoringSSL](https://boringssl.googlesource.com/boringssl) (**BoringSSL** is not currently supported)

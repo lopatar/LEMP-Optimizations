@@ -45,6 +45,11 @@ fi
 
 ## End NGINX installation
 
+if [[ $USE_PHP == 1 ]]; then
+  addPhpRepository
+
+fi
+
 ## Start Redis installation
 
 if [[ $USE_REDIS == 1 ]]; then

@@ -3,6 +3,7 @@ USE_OPENSSL=1
 
 USE_NGINX=1
 USE_MARIADB=1
+USE_PHP=1
 USE_REDIS=1
 
 SWAP_ENABLE=1
@@ -11,6 +12,7 @@ SWAP_MAX_MB=8192
 
 NGINX_VERSION="1.25.4"
 MARIADB_VERSION="11.3"
+PHP_VERSION="8.3"
 REDIS_VERSION="7.2.4"
 
 JEMALLOC_VERSION="5.3.0"
@@ -39,6 +41,7 @@ function printConfiguration()
   printConfVar USE_OPENSSL
   printConfVar USE_NGINX
   printConfVar USE_MARIADB
+  printConfVar USE_PHP
   printConfVar USE_REDIS
 
   printConfVar SWAP_ENABLE
@@ -47,6 +50,7 @@ function printConfiguration()
 
   printConfVar NGINX_VERSION
   printConfVar MARIADB_VERSION
+  printConfVar PHP_VERSION
   printConfVar REDIS_VERSION
 
   printConfVar JEMALLOC_VERSION
