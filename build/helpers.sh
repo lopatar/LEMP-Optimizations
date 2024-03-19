@@ -16,13 +16,6 @@ function prepareLogging()
   printLine "Prepared logging system" "Logging"
 }
 
-function logStdErr()
-{
-    local STDERR_DATA
-    read -r STDERR_DATA
-    logToFile "ERROR" "OptimizedLEMP" "${LOG_STDERR_FILE}" "${STDERR_DATA}"
-}
-
 function logToFile()
 {
   local LOG_TYPE=${1}
@@ -35,9 +28,6 @@ function logToFile()
 
   convertToUppercase "$LOG_MODULE"
   LOG_MODULE=$GLOBAL_UPPERCASE
-
-  convertToUppercase "$LOG_TEXT"
-  LOG_TEXT=$GLOBAL_UPPERCASE
 
   getCurrentTime
 
@@ -287,7 +277,7 @@ function checkRoot()
 
 function systemctlWrap()
 {
-  systemctl -q -f "${1}"
+  systemctl -q -f ${1}
 }
 
 function rmWrap()
