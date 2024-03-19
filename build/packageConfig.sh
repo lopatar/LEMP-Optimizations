@@ -48,3 +48,5 @@ MARIADB_CONF_FOLDER="/etc/mysql"
 MARIADB_SOCKET_FOLDER="/var/run/mysqld"
 MARIADB_CONF_FILE="my.cnf"
 MARIADB_INSTALLATION_FOLDER="/usr/local/mysql"
+
+PHP_PREFIX="php${PHP_VERSION}"

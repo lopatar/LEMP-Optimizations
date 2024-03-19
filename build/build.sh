@@ -47,7 +47,7 @@ fi
 
 if [[ $USE_PHP == 1 ]]; then
   addPhpRepository
-
+  aptWrap "install --install-suggests" "${PHP_PREFIX} ${PHP_PREFIX}-fpm ${PHP_PREFIX}-common"
 fi
 
 ## Start Redis installation

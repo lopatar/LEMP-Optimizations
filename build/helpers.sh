@@ -243,7 +243,7 @@ function installPackage()
   local PACKAGE_STRING=${1}
 
   printLine "Installing ${PACKAGE_STRING}" "Build-Installer"
-  aptWrap "install" "${PACKAGE_STRING}"
+  aptWrap "install" $PACKAGE_STRING
 }
 
 function installPackages()
