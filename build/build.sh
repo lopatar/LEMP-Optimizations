@@ -2,7 +2,6 @@
 buildModule $JEMALLOC_FOLDER $JEMALLOC_URL "$JEMALLOC_BUILD_ARGS"
 buildModule $ZLIB_FOLDER $ZLIB_URL "$ZLIB_BUILD_ARGS"
 buildModule $PCRE2_FOLDER $PCRE2_URL "$PCRE2_BUILD_ARGS"
-buildModule $OPENSSL_FOLDER $OPENSSL_URL "$OPENSSL_BUILD_ARGS"
 
 ## Start NGINX installation
 
@@ -10,9 +9,12 @@ if [[ $USE_NGINX == 1 ]]; then
   buildModule $LIBATOMIC_FOLDER "$LIBATOMIC_URL" $LIBATOMIC_BUILD_ARGS
 
   if [[ $USE_OPENSSL == 0 ]]; then
+      die "Must use OpenSSL, BoringSSL not yet supported!"
       # Needs to be implemented!!!
-      buildModule $GOLANG_FOLDER "$GOLANG_URL"
-      buildModule $BORINGSSL_FOLDER $BORINGSSL_URL $BORINGSSL_BUILD_ARGS
+      #buildModule $GOLANG_FOLDER "$GOLANG_URL"
+      #buildModule $BORINGSSL_FOLDER $BORINGSSL_URL $BORINGSSL_BUILD_ARGS
+  else
+    buildModule $OPENSSL_FOLDER $OPENSSL_URL
   fi
 
   buildModule $NGX_BROTLI_FOLDER $NGX_BROTLI_URL
@@ -123,13 +125,13 @@ if [[ $USE_MARIADB == 1 ]]; then
   chown -R mysql:mysql "${MARIADB_INSTALLATION_FOLDER}"
 
   printLine "Reloading systemd daemon" "Systemd"
-  systemctlWrap daemon-reload
+  systemctlWrap "daemon-reload"
 
   printLine "Enabling ${MARIADB_FOLDER}.service" "Systemd"
-  systemctlWrap enable "${MARIADB_FOLDER}.service"
+  systemctlWrap "enable" "${MARIADB_FOLDER}.service"
 
   printLine "Starting ${MARIADB_FOLDER}.service" "Systemd"
-  systemctlWrap start "${MARIADB_FOLDER}.service"
+  systemctlWrap "start" "${MARIADB_FOLDER}.service"
 
   printLine "MariaDB configuration files $(ls "${MARIADB_CONF_FOLDER}")" "MariaDB"
 fi

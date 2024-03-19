@@ -103,7 +103,7 @@ function kernelTuning()
   fi
 
   printLine "Restarting dphys-swapfile.service" "MEMORY-Optimization"
-  systemctlWrap "restart dphys-swapfile.service"
+  systemctlWrap "restart" "dphys-swapfile.service"
 
   ## End configure SWAP
 
@@ -181,10 +181,10 @@ function enableService() {
     systemctlWrap "daemon-reload"
 
     printLine "Enabling ${SERVICE_NAME} service" "Systemd"
-    systemctlWrap "enable ${SERVICE_NAME}"
+    systemctlWrap "enable" "${SERVICE_NAME}"
 
     printLine "Starting ${SERVICE_NAME} service" "Systemd"
-    systemctlWrap "start ${SERVICE_NAME}"
+    systemctlWrap "start" "${SERVICE_NAME}"
 }
 
 function deleteCache()
@@ -282,7 +282,11 @@ function checkRoot()
 
 function systemctlWrap()
 {
-  systemctl -q -f ${1}
+  if [[ -z $2 ]]; then
+    systemctl -q -f "${1}"
+  else
+    systemctl -q -f "${1}" "${2}"
+  fi
 }
 
 function rmWrap()
@@ -299,9 +303,9 @@ function aptWrap()
   local APT_ARGS="-qq"
 
   if [[ -z $PACKAGE ]]; then
-    apt-get $APT_ARGS $ACTION
+    apt-get $APT_ARGS "${ACTION}"
   else
-    apt-get $APT_ARGS $ACTION $PACKAGE
+    apt-get $APT_ARGS "${ACTION}" "${PACKAGE}"
   fi
 
 }
@@ -317,9 +321,14 @@ function mkdirWrap()
   mkdir -p "${1}"
 }
 
+# shellcheck disable=SC2120
 function die()
 {
-  printLine "Exiting" "Core"
+  if [[ -z $1 ]]; then
+    printLine "Exiting" "Core"
+  else
+    printLine "Exiting [REASON: ${1}]" "Core"
+  fi
 
   set -e
   false
