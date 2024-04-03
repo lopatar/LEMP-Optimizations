@@ -3,7 +3,6 @@ USE_OPENSSL=1
 
 USE_NGINX=1
 USE_MARIADB=1
-USE_PHP=1
 USE_REDIS=1
 
 SWAP_ENABLE=1
@@ -12,7 +11,6 @@ SWAP_MAX_MB=8192
 
 NGINX_VERSION="1.25.4"
 MARIADB_VERSION="11.3"
-PHP_VERSION="8.3"
 REDIS_VERSION="7.2.4"
 
 JEMALLOC_VERSION="5.3.0"
@@ -24,24 +22,19 @@ OPENSSL_VERSION="3.2.1"
 
 M_TUNE="cortex-a72"
 
-C_COMPILER="/usr/bin/clang"
-CXX_COMPILER="/usr/bin/clang++"
-
 function printConfVar()
 {
   # shellcheck disable=SC2028
-  CONF_VAR="$1 => \"$(eval echo \$"$1")\""
-  printLine "${CONF_VAR}" "Config"
+  echo "$1 => \"$(eval echo \$"$1")\""
 }
 
 function printConfiguration()
 {
-  printLine "Printing configuration" "Config"
+  printLine "Printing configuration"
 
   printConfVar USE_OPENSSL
   printConfVar USE_NGINX
   printConfVar USE_MARIADB
-  printConfVar USE_PHP
   printConfVar USE_REDIS
 
   printConfVar SWAP_ENABLE
@@ -50,7 +43,6 @@ function printConfiguration()
 
   printConfVar NGINX_VERSION
   printConfVar MARIADB_VERSION
-  printConfVar PHP_VERSION
   printConfVar REDIS_VERSION
 
   printConfVar JEMALLOC_VERSION
@@ -61,8 +53,6 @@ function printConfiguration()
   printConfVar OPENSSL_VERSION
 
   printConfVar M_TUNE
-  printConfVar C_COMPILER
-  printConfVar CXX_COMPILER
 }
 
 
