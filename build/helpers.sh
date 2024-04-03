@@ -123,34 +123,10 @@ function kernelTuning()
 
   ## End configure SWAP
 
-  # shellcheck disable=SC2155
-  local SYSCTL_CONFIG=$(sysctl -a)
-
-  if [[ -z $(echo "${SYSCTL_CONFIG}" | grep -s "vm.overcommit_memory = 1") ]]; then
-    printLine "Setting vm.overcommit_memory = 1" "MEMORY-Optimization"
-    echo "vm.overcommit_memory = 1" >> /etc/sysctl.conf
+  ## RC.LOCAL
+  if [[ ! -f /etc/rc.local ]]; then
+    echo "rc.local does not exist"
   fi
-
-  if [[ -z $(echo "${SYSCTL_CONFIG}" | grep -s "vm.swappiness = 1") ]]; then
-    printLine "Setting vm.swappiness = 1" "IO-Optimization"
-    echo "vm.swappiness = 1" >> /etc/sysctl.conf
-  fi
-
-  if [[ -z $(echo "${SYSCTL_CONFIG}" | grep -s "net.ipv4.ip_unprivileged_port_start = 1024") ]]; then
-    printLine "Setting net.ipv4.ip_unprivileged_port_start = 1024" "NETWORK-Optimization"
-    echo "net.ipv4.ip_unprivileged_port_start = 1024" >> /etc/sysctl.conf
-  fi
-
-  if [[ -z $(echo "${SYSCTL_CONFIG}" | grep -s "fs.file-max = 524280") ]]; then
-    printLine "Setting fs.file-max = 524280" "IO-Optimization"
-    echo "fs.file-max = 524280" >> /etc/sysctl.conf
-  fi
-
-  printLine "Disabling hugepages & defrag" "MEMORY-Optimization"
-  echo never | tee /sys/kernel/mm/transparent_hugepage/enabled /sys/kernel/mm/transparent_hugepage/defrag > /dev/null
-
-  printLine "Reloading systemd configuration" "Systemd"
-  sysctl -p -q
 }
 
 function getMariaDbSource()
@@ -175,7 +151,7 @@ function getMariaDbSource()
   mkdir -p "${MARIADB_BUILD_FOLDER}"
 
   printLine "Moving original MariaDB data to build folder" "MariaDB"
-  mv "${MARIADB_FOLDER}"-*/* "${MARIADB_FOLDER}"
+  cp -fr "${MARIADB_FOLDER}"-*/* "${MARIADB_BUILD_FOLDER}"
 
   printLine "Removing: $(ls "${MARIADB_FOLDER}"*.*)" "Cleanup"
   rmWrap "${MARIADB_FOLDER}"*.*
