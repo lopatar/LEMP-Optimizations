@@ -9,9 +9,16 @@ The script mostly consists of me experimenting with more advanced scripting conc
 
 **The script is written in zsh**
 
-# Configuration
-All configuration options are located in [config.sh](https://github.com/lopatar/LEMP-Optimizations/blob/master/build.sh)
+# Usage
+```zsh
+git clone https://github.com/lopatar/LEMP-Optimizations.git
+cd LEMP-Optimizations
 
+chmod +x install.sh
+./install.sh
+```
+## Configuration
+All configuration options are located in [config.sh](https://github.com/lopatar/LEMP-Optimizations/blob/master/config.sh)
 
 # Software installed
 - NGINX
@@ -26,7 +33,7 @@ All configuration options are located in [config.sh](https://github.com/lopatar/
   - Newer release than default package
   - Architecture specific optimizations
   - Optimized server configuration
-- PHP-FPM **TODO**
+- PHP-FPM (**Installed from [deb.sury.org](https://deb.sury.org)**)
 
 # Other optimizations
 - OpenSSL/[BoringSSL](https://boringssl.googlesource.com/boringssl) (**BoringSSL** is not currently supported)
