@@ -32,44 +32,8 @@ REDIS_LOG=${VAR_LOG}/redis
 MYSQL_SOCKET_FOLDER=${VAR_RUN}/mysqld
 MYSQL_SOCKET=${MYSQL_SOCKET_FOLDER}/mysqld.sock
 
-groupExists()
-{
-  local CHECK_GROUP=${1};
-  # shellcheck disable=SC2155
-  local GROUP_EXISTS=$(getent group | cut -d: -f1 | grep -c "$CHECK_GROUP");
-  return "$GROUP_EXISTS";
-}
-
 configureUsers()
 {
-  local EXISTS_WWW_DATA=groupExists "www-data";
-
-  if [[ $EXISTS_WWW_DATA == 0 ]]; then
-    echo "CREATED www-data user";
-    groupAdd www-data
-  fi
-
-  local EXISTS_MYSQL=groupExists "mysql";
-
-  if [[ $EXISTS_MYSQL == 0 ]]; then
-    echo "CREATED mysql group";
-    groupAdd mysql;
-  fi
-
-  local EXISTS_REDIS=groupExists "redis";
-
-  if [[ $EXISTS_REDIS == 0 ]]; then
-    echo "CREATED redis group"
-    groupAdd redis;
-  fi
-
-  local EXISTS_UNBOUND=groupExists "unbound";
-
-  if [[ $EXISTS_UNBOUND == 0 ]]; then
-    echo "CREATED unbound group"
-    groupAdd unbound;
-  fi
-
   usermod -aG mysql redis;
   usermod -aG mysql www-data;
   usermod -aG mysql unbound;
@@ -81,6 +45,8 @@ configureUsers()
   usermod -aG www-data mysql;
   usermod -aG www-data redis;
   usermod -aG www-data unbound;
+
+  echo "GRANTED USER & GROUP PERMISSIONS"
 }
 
 configureScheduler()
@@ -108,20 +74,21 @@ configureInterface()
   ethtool -A eth0 rx on
   ethtool -A eth0 tx on
 
-  ethtool -K eth0 gro on -K eth0 rx-udp-gro-forwarding on
+  ethtool -K eth0 gro on
+  ethtool -K eth0 rx-udp-gro-forwarding on
 
   echo 13888 > /proc/sys/net/core/netdev_max_backlog
 }
 
 createLogFiles()
 {
-  //770not-R
+  #770not-R
   mkdir -p $NGINX_LOG
   touch "${NGINX_LOG}"/access.config;
   touch "${NGINX_LOG}"/error.log
 
   echo "CREATED NGINX LOG ACCES, ERROR FILES"
-  //660
+  #//660
 
   mkdir -p $MYSQL_LOG
   touch "${MYSQL_LOG}"/slow.log
@@ -141,7 +108,7 @@ createLogFiles()
 
 configureLogPermissions()
 {
-  //read,write,exec
+  #//read,write,exec
   chown -R  www-data:www-data $NGINX_LOG;
   chmod 770 $NGINX_LOG;
   chmod -R 660 "${NGINX_LOG}"/*;
@@ -154,7 +121,7 @@ configureLogPermissions()
 
   echo "CONFIGURED MARIADB LOG PERMISSIONS";
 
-  //read,write
+  #//read,write
   chown redis:redis $REDIS_LOG;
   chmod 770 ${REDIS_LOG};
   chmod -R 660 "${REDIS_LOG}"/*
@@ -190,19 +157,30 @@ configureSysCtl()
   sysctl -w "net.ipv4.ip_unprivileged_port_start=1024"
   echo "Setting net.ipv4.ip_unprivileged_port_start = 1024"
 
-  echo never | tee /sys/kernel/mm/transparent_hugepage/enabled /sys/kernel/mm/transparent_hugepage/defrag > /dev/null
-  echo "Disabling hugepages & defrag"
+  echo "Trying to disable hugepages & defrag"
+
+  if [ -f /sys/kernel/mm/transparent_hugepage/enabled ]; then
+    echo never | tee /sys/kernel/mm/transparent_hugepage/enabled
+    echo "Disabled hugepages"
+  fi
+
+  if [ -f /sys/kernel/mm/transparent_hugepage/defrag ]; then
+    echo never | tee sys/kernel/mm/transparent_hugepage/defrag
+    echo "Disabled hugepage defragmentation"
+  fi
 
   echo "Reloading systemd configuration"
   sysctl -p
 }
 
 configureInterface
-configureSchdeduler
+configureScheduler
 configureSysCtl
 
-createUsers
+configureUsers
 createLogFiles
 configureLogPermissions
+
+configureMariaDbSocket
 
 exit 0
