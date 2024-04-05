@@ -1,4 +1,6 @@
 # Optimized LEMP stack build stack
+## ** CURRENTLY BROKEN **
+
 This script is intended to ease building optimized LEMP stack **and more** using the newest software and libraries.
 
 The script mostly consists of me experimenting with more advanced scripting concepts, please be kind :)
