@@ -5,8 +5,7 @@ Documentation=http://redis.io/documentation, man:redis-server(1)
 
 [Service]
 Type=notify
-ExecStartPre=/bin/sh -c 'echo never | tee /sys/kernel/mm/transparent_hugepage/enabled /sys/kernel/mm/transparent_hugepage/defrag > /dev/null'
-ExecStart=/usr/bin/redis-server /etc/redis/redis.conf --supervised systemd --daemonize no
+ExecStart=/usr/local/bin/redis-server /etc/redis/redis.conf --supervised systemd --daemonize no
 PIDFile=/run/redis/redis-server.pid
 TimeoutStopSec=0
 Restart=always
@@ -16,14 +15,14 @@ RuntimeDirectory=redis
 RuntimeDirectoryMode=2755
 
 UMask=007
-PrivateTmp=true
+PrivateTmp=false
 LimitNOFILE=87380
 PrivateDevices=true
 ProtectHome=true
 ProtectSystem=strict
 ReadWritePaths=-/var/lib/redis
-ReadWritePaths=-/var/log/redis
 ReadWritePaths=-/var/run/redis
+ReadWritePaths=-/tmp/redis
 
 CapabilityBoundingSet=
 LockPersonality=true
@@ -49,7 +48,6 @@ SystemCallFilter=~ @privileged @resources
 # redis-server can write to its own config file when in cluster mode so we
 # permit writing there by default. If you are not using this feature, it is
 # recommended that you remove this line.
-ReadWriteDirectories=-/etc/redis
 
 # This restricts this service from executing binaries other than redis-server
 # itself. This is really effective at e.g. making it impossible to an
@@ -58,7 +56,7 @@ ReadWriteDirectories=-/etc/redis
 # binaries by adding an extra ExecPaths= directive with the command
 # systemctl edit redis-server.service
 NoExecPaths=/
-ExecPaths=/usr/bin/redis-server /usr/lib /lib
+ExecPaths=/usr/local/bin/redis-server /usr/lib /lib
 
 [Install]
 WantedBy=multi-user.target
