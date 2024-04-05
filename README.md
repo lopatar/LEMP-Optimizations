@@ -20,7 +20,7 @@ chmod +x install.sh
 ## Configuration
 All configuration options are located in [config.sh](https://github.com/lopatar/LEMP-Optimizations/blob/master/config.sh)
 
-# Software installed[Raspberry4.md](..%2F..%2FDesktop%2FRaspberry4.md)
+# Software installed
 - NGINX
   - Removing unnecessary modules and focusing strictly on the HTTP part
   - Enabling thread pools
@@ -41,6 +41,7 @@ All configuration options are located in [config.sh](https://github.com/lopatar/
 - Cloudflare's [optimized fork](https://github.com/cloudflare/zlib) of zlib
 - Libatomic
 - Leveraging GCC optimization features
+- Creating new tmpfs file-system mounted at /lemp-tmp **TODO**
 
 # Optional software
 - Redis
