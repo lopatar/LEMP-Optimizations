@@ -18,7 +18,7 @@ chmod +x install.sh
 ## Configuration
 All configuration options are located in [config.sh](https://github.com/lopatar/LEMP-Optimizations/blob/master/config.sh)
 
-# Software installed
+# Software installed[Raspberry4.md](..%2F..%2FDesktop%2FRaspberry4.md)
 - NGINX
   - Removing unnecessary modules and focusing strictly on the HTTP part
   - Enabling thread pools

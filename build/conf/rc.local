@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh
 #
 # rc.local
 #
@@ -20,18 +20,21 @@ fi
 SYS_BLOCK=/sys/block/mmcblk0
 QUEUE=$SYS_BLOCK/queue
 IOSCHED=${QUEUE}/iosched
-VAR_LOG=/var/log
-VAR_RUN=/var/run
+VAR_LOG=/tmp
+VAR_RUN=/run
 
-NGINX_LOG=${VAR_LOG}/nginx
-UNBOUND_LOG=${VAR_LOG}/unbound
+NGINX_LOG=$VAR_LOG/nginx
+UNBOUND_LOG=$VAR_LOG/unbound
+MYSQL_LOG=$VAR_LOG/mysql
+REDIS_LOG=$VAR_LOG/redis
 
-MYSQL_LOG=${VAR_LOG}/mysql
-REDIS_LOG=${VAR_LOG}/redis
+MYSQL_SOCKET_FOLDER=$VAR_RUN/mysqld
+REDIS_SOCKET_FOLDER=$VAR_RUN/redis
 
-MYSQL_SOCKET_FOLDER=${VAR_RUN}/mysqld
-MYSQL_SOCKET=${MYSQL_SOCKET_FOLDER}/mysqld.sock
+MYSQL_SOCKET_FILE=$MYSQL_SOCKET_FOLDER/mysqld.sock
+REDIS_SOCKET_FILE=$REDIS_SOCKET_FOLDER/redis-server.sock
 
+REDIS_PID_FILE=$REDIS_SOCKET_FILE/redis-server.pid
 configureUsers()
 {
   usermod -aG mysql redis;
@@ -51,19 +54,19 @@ configureUsers()
 
 configureScheduler()
 {
-  echo mq-deadline > "${QUEUE}"/scheduler
+  echo mq-deadline > $QUEUE/scheduler
 
   echo "CONFIGURED MQ_DEADLINE"
 
-  echo 100 > "${IOSCHED}"/read_expire
+  echo 100 > $IOSCHED/read_expire
 
   echo "CONFIGURED READ_EXPIRE"
 
-  echo 4 > "${IOSCHED}"/writes_starved
+  echo 4 > $IOSCHED/writes_starved
 
   echo "CONFIGURED WRITES_STARVED"
 
-  echo 192 > "${QUEUE}"/nr_requests
+  echo 192 > $QUEUE/nr_requests
 
   echo "CONFIGURED NR_REQUESTS"
 }
@@ -82,26 +85,24 @@ configureInterface()
 
 createLogFiles()
 {
-  #770not-R
   mkdir -p $NGINX_LOG
-  touch "${NGINX_LOG}"/access.config;
-  touch "${NGINX_LOG}"/error.log
+  touch $NGINX_LOG/access.config;
+  touch $NGINX_LOG/error.log
 
   echo "CREATED NGINX LOG ACCES, ERROR FILES"
-  #//660
 
   mkdir -p $MYSQL_LOG
-  touch "${MYSQL_LOG}"/slow.log
+  touch $MYSQL_LOG/slow.log
 
   echo "CREATED MARIADB LOG FILE"
 
   mkdir -p $REDIS_LOG
-  touch "${REDIS_LOG}"/redis-server.log
+  touch $REDIS_LOG/redis-server.log
 
   echo "CREATED REDIS SERVER LOG"
 
   mkdir -p $UNBOUND_LOG
-  touch "${UNBOUND_LOG}"/unbound.log
+  touch $UNBOUND_LOG/unbound.log
 
   echo "CREATED UNBOUND LOG";
 }
@@ -110,37 +111,48 @@ configureLogPermissions()
 {
   #//read,write,exec
   chown -R  www-data:www-data $NGINX_LOG;
-  chmod 770 $NGINX_LOG;
-  chmod -R 660 "${NGINX_LOG}"/*;
+  chmod -R 770 $NGINX_LOG
 
   echo "CONFIGURED NGINX LOG PERMISSIONS"
 
   chown -R mysql:mysql $MYSQL_LOG;
-  chmod 770 $MYSQL_LOG;
-  chmod -R 660 "${MYSQL_LOG}"/*
+  chmod -R 770 $MYSQL_LOG;
 
   echo "CONFIGURED MARIADB LOG PERMISSIONS";
 
   #//read,write
-  chown redis:redis $REDIS_LOG;
-  chmod 770 ${REDIS_LOG};
-  chmod -R 660 "${REDIS_LOG}"/*
+  chown -R redis:redis $REDIS_LOG;
+  chmod -R 770 $REDIS_LOG;
 
   echo "CONFIGURED REDIS LOG PERMISSIONS"
 
-  chown unbound:unbound $UNBOUND_LOG;
-  chmod 770 $UNBOUND_LOG;
-  chmod -R 660 "${UNBOUND_LOG}"/*;
+  chown -R unbound:unbound $UNBOUND_LOG;
+  chmod -R 770 $UNBOUND_LOG
 
   echo "CONFIGURED UNBOUND LOG PERMISSIONS";
 }
 
-configureMariaDbSocket()
+configureSockets()
 {
-  chown mysql:root $MYSQL_SOCKET_FOLDER
+  mkdir -p $MYSQL_SOCKET_FOLDER
+  touch $MYSQL_SOCKET_FILE
 
-  chown mysql:mysql $MYSQL_SOCKET
-  chmod 777 $MYSQL_SOCKET
+  echo "CREATED MYSQL SOCKET FOLDER & CREATED SOCKET FILE"
+
+  chown -R mysql:mysql $MYSQL_SOCKET_FOLDER
+  chmod 770 -R $MYSQL_SOCKET_FOLDER
+
+  echo "SET MYSQL SOCKET FILE PERMISSIONS & OWNERSHIP"
+
+  mkdir -p $REDIS_SOCKET_FOLDER
+  touch $REDIS_SOCKET_FILE
+  touch $REDIS_PID_FILE
+
+  chown -R redis:redis $REDIS_SOCKET_FOLDER
+  chmod 770 -R $REDIS_SOCKET_FOLDER
+
+  echo "CREATED REDIS SOCKET FOLDER & CREATED SOCKET/PID FILE"
+  echo "SET REDIS SOCKET DIRECTORY PERMISSIONS & OWNERSHIP"
 }
 
 configureSysCtl()
@@ -178,9 +190,10 @@ configureScheduler
 configureSysCtl
 
 configureUsers
+
 createLogFiles
 configureLogPermissions
 
-configureMariaDbSocket
+configureSockets
 
 exit 0

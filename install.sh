@@ -6,10 +6,12 @@ REPO_FOLDER=$(pwd)
 
 # shellcheck disable=SC2034
 LOG_TIMEZONE="Europe/Prague"
-LOG_FOLDER="${REPO_FOLDER}/logs"
+
+LOG_FOLDER=$REPO_FOLDER/logs
 LOG_FILENAME="lemp-script.log"
+
 # shellcheck disable=SC2034
-LOG_FILE="${LOG_FOLDER}/${LOG_FILENAME}"
+LOG_FILE=$LOG_FOLDER/$LOG_FILENAME
 
 source build/helpers.sh
 printLine "!!!!!!!!!!! SCRIPT STARTED !!!!!!!!!!!"
