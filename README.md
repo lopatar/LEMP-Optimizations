@@ -1,5 +1,5 @@
 # Optimized LEMP stack build stack
-## ** CURRENTLY BROKEN **
+## ** CURRENTLY NOT PRODUCTION READY **
 
 This script is intended to ease building optimized LEMP stack **and more** using the newest software and libraries.
 

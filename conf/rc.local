@@ -34,7 +34,7 @@ REDIS_SOCKET_FOLDER=$VAR_RUN/redis
 MYSQL_SOCKET_FILE=$MYSQL_SOCKET_FOLDER/mysqld.sock
 REDIS_SOCKET_FILE=$REDIS_SOCKET_FOLDER/redis-server.sock
 
-REDIS_PID_FILE=$REDIS_SOCKET_FILE/redis-server.pid
+REDIS_PID_FILE=$REDIS_SOCKET_FOLDER/redis-server.pid
 configureUsers()
 {
   usermod -aG mysql redis;
@@ -86,10 +86,16 @@ configureInterface()
 createLogFiles()
 {
   mkdir -p $NGINX_LOG
-  touch $NGINX_LOG/access.config;
+  mkdir $NGINX_LOG/cache
+
+  touch $NGINX_LOG/access.log;
   touch $NGINX_LOG/error.log
 
-  echo "CREATED NGINX LOG ACCES, ERROR FILES"
+  mkdir -p /var/log/nginx
+  touch /var/log/nginx/access.log
+  touch /var/log/nginx/error.log
+
+  echo "CREATED NGINX LOG ACCESS & ERROR FILES"
 
   mkdir -p $MYSQL_LOG
   touch $MYSQL_LOG/slow.log
@@ -110,7 +116,7 @@ createLogFiles()
 configureLogPermissions()
 {
   #//read,write,exec
-  chown -R  www-data:www-data $NGINX_LOG;
+  chown -R www-data:www-data $NGINX_LOG;
   chmod -R 770 $NGINX_LOG
 
   echo "CONFIGURED NGINX LOG PERMISSIONS"
@@ -140,7 +146,9 @@ configureSockets()
   echo "CREATED MYSQL SOCKET FOLDER & CREATED SOCKET FILE"
 
   chown -R mysql:mysql $MYSQL_SOCKET_FOLDER
-  chmod 770 -R $MYSQL_SOCKET_FOLDER
+  chmod 755 $MYSQL_SOCKET_FOLDER
+
+  chmod 660 $MYSQL_SOCKET_FILE
 
   echo "SET MYSQL SOCKET FILE PERMISSIONS & OWNERSHIP"
 
@@ -148,10 +156,14 @@ configureSockets()
   touch $REDIS_SOCKET_FILE
   touch $REDIS_PID_FILE
 
-  chown -R redis:redis $REDIS_SOCKET_FOLDER
-  chmod 770 -R $REDIS_SOCKET_FOLDER
-
   echo "CREATED REDIS SOCKET FOLDER & CREATED SOCKET/PID FILE"
+
+  chown -R redis:redis $REDIS_SOCKET_FOLDER
+  chmod 755 $REDIS_SOCKET_FOLDER
+
+  chmod 660 $REDIS_SOCKET_FILE
+  chmod 660 $REDIS_PID_FILE
+
   echo "SET REDIS SOCKET DIRECTORY PERMISSIONS & OWNERSHIP"
 }
 
@@ -195,5 +207,7 @@ createLogFiles
 configureLogPermissions
 
 configureSockets
+
+service redis start
 
 exit 0
