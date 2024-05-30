@@ -21,8 +21,8 @@ PrivateDevices=true
 ProtectHome=true
 ProtectSystem=strict
 ReadWritePaths=-/var/lib/redis
-ReadWritePaths=-/var/run/redis
-ReadWritePaths=-/tmp/redis
+ReadWritePaths=-/run/redis
+ReadWritePaths=-/var/log/redis
 
 CapabilityBoundingSet=
 LockPersonality=true
