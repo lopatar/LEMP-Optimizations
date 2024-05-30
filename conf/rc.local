@@ -20,7 +20,7 @@ fi
 SYS_BLOCK=/sys/block/mmcblk0
 QUEUE=$SYS_BLOCK/queue
 IOSCHED=${QUEUE}/iosched
-VAR_LOG=/tmp
+VAR_LOG=/var/log
 VAR_RUN=/run
 
 NGINX_LOG=$VAR_LOG/nginx
@@ -86,14 +86,10 @@ configureInterface()
 createLogFiles()
 {
   mkdir -p $NGINX_LOG
-  mkdir $NGINX_LOG/cache
+  mkdir -p /tmp/nginx/cache
 
   touch $NGINX_LOG/access.log;
   touch $NGINX_LOG/error.log
-
-  mkdir -p /var/log/nginx
-  touch /var/log/nginx/access.log
-  touch /var/log/nginx/error.log
 
   echo "CREATED NGINX LOG ACCESS & ERROR FILES"
 
@@ -118,6 +114,9 @@ configureLogPermissions()
   #//read,write,exec
   chown -R www-data:www-data $NGINX_LOG;
   chmod -R 770 $NGINX_LOG
+
+  chown -R www-data:www-data /tmp/nginx/cache;
+  chmod -R 770 /tmp/nginx/cache;
 
   echo "CONFIGURED NGINX LOG PERMISSIONS"
 
@@ -209,5 +208,6 @@ configureLogPermissions
 configureSockets
 
 service redis start
+service nginx start
 
 exit 0
